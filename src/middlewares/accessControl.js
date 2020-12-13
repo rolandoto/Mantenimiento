@@ -9,6 +9,7 @@ ac.grant("admin")
     .updateAny("environment")
     .createAny("environment")
     .deleteAny("environment")
+    .deleteAny("rol")
     .updateAny("rol")
     .createAny("rol")
     .deleteAny("rol");

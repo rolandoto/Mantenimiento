@@ -49,7 +49,6 @@ rolMethods.getRol = async (req, res) => {
     if (permission.granted) {
         try {
             const rolID = req.params.id;
-            console.log(rolID);
             const rol = await Rol.findById(rolID);
             return res.status(200).json({
                 status: true,
@@ -123,37 +122,44 @@ rolMethods.createRol = async (req, res) => {
  * @return Object
  */
 rolMethods.updateRol = async (req, res) => {
-    const permission = ac.can(req.user.rol.name).createAny("rol");
+    const permission = ac.can(req.user.rol.name).updateAny("rol");
     if (permission.granted) {
         const { rolID, name } = req.body;
-        if (name) {
-            const getRol = await Rol.findById(rolID);
-            if (getRol) {
-                try {
-                    await getRol.update({
-                        name,
-                    });
+        if (rolID) {
+            if (name) {
+                const getRol = await Rol.findById(rolID);
+                if (getRol) {
+                    try {
+                        await getRol.updateOne({
+                            name,
+                        });
 
-                    return res.status(400).json({
-                        status: true,
-                        message: "El rol se ha actualizado correctamente.",
-                    });
-                } catch (error) {
+                        return res.status(200).json({
+                            status: true,
+                            message: "El rol se ha actualizado correctamente.",
+                        });
+                    } catch (error) {
+                        return res.status(400).json({
+                            status: false,
+                            message: "Ha ocurrido un error, intentalo nuevamente.",
+                        });
+                    }
+                } else {
                     return res.status(400).json({
                         status: false,
-                        message: "Ha ocurrido un error, intentalo nuevamente.",
+                        message: "No se ha encontrado el recurso solicitado.",
                     });
                 }
             } else {
                 return res.status(400).json({
                     status: false,
-                    message: "No se ha encontrado el recurso solicitado.",
+                    message: "Debes llenar los campos requeridos.",
                 });
             }
         } else {
             return res.status(400).json({
                 status: false,
-                message: "Debes llenar los campos requeridos.",
+                message: "El ID es requerido.",
             });
         }
     } else {
@@ -174,25 +180,40 @@ rolMethods.updateRol = async (req, res) => {
  * @return Object
  */
 rolMethods.deleteRol = async (req, res) => {
-    const { rolID } = req.body;
-    try {
-        const getRol = await Rol.findById(rolID);
-        if (getRol) {
-            getRol.remove();
-            return res.status(201).json({
-                status: true,
-                message: "El rol fue eliminado correctamente.",
-            });
+    const permission = ac.can(req.user.rol.name).deleteAny("rol");
+    if (permission.granted) {
+        const { rolID } = req.body;
+        if (rolID) {
+            try {
+                const getRol = await Rol.findById(rolID);
+                if (getRol) {
+                    getRol.remove();
+                    return res.status(200).json({
+                        status: true,
+                        message: "El rol fue eliminado correctamente.",
+                    });
+                } else {
+                    return res.status(400).json({
+                        status: false,
+                        message: "No se ha encontrado el recurso solicitado.",
+                    });
+                }
+            } catch (error) {
+                return res.status(400).json({
+                    status: false,
+                    message: "Ha ocurrido un error, intentalo nuevamente.",
+                });
+            }
         } else {
             return res.status(400).json({
                 status: false,
-                message: "No se ha encontrado el recurso solicitado.",
+                message: "El ID es requerido.",
             });
         }
-    } catch (error) {
-        return res.status(400).json({
+    } else {
+        return res.status(403).json({
             status: false,
-            message: "Ha ocurrido un error, intentalo nuevamente.",
+            message: "No tienes permisos para ejecutar esta acción",
         });
     }
 };
