@@ -73,79 +73,95 @@ userMethods.login = async (req, res) => {
  */
 userMethods.register = async (req, res) => {
     const { rolID, email, username, password, name } = req.body;
-    const rol = await Rol.findById(rolID);
-    if (rol) {
-        if (email) {
-            const getUserEmail = await getUserByParam(email, "email");
-            if (getUserEmail) {
-                return res.status(400).json({
-                    status: false,
-                    type: "email",
-                    message: "El email ya esta en uso.",
-                });
-            }
-
-            if (username) {
-                const getUserUsername = await getUserByParam(username, "username");
-                if (getUserUsername) {
-                    return res.status(400).json({
-                        status: false,
-                        type: "username",
-                        message: "El nombre de usuario ya esta en uso.",
-                    });
-                }
-
-                if (password) {
-                    const user = new User({
-                        email,
-                        username,
-                        password,
-                        name,
-                        rol: {
-                            id: rol._id,
-                            name: rol.name,
-                        },
-                    });
-                    user.password = await user.encryptPassword(password);
-
-                    if (await user.save()) {
-                        return res.status(200).json({
-                            status: true,
-                            message: "El usuario ha sido registrado correctamente",
+    if (rolID) {
+        try {
+            const rol = await Rol.findById(rolID);
+            if (rol) {
+                if (email) {
+                    const getUserEmail = await getUserByParam(email, "email");
+                    if (getUserEmail) {
+                        return res.status(400).json({
+                            status: false,
+                            type: "email",
+                            message: "El email ya esta en uso.",
                         });
+                    }
+
+                    if (username) {
+                        const getUserUsername = await getUserByParam(username, "username");
+                        if (getUserUsername) {
+                            return res.status(400).json({
+                                status: false,
+                                type: "username",
+                                message: "El nombre de usuario ya esta en uso.",
+                            });
+                        }
+
+                        if (password) {
+                            const user = new User({
+                                email,
+                                username,
+                                password,
+                                name,
+                                rol: {
+                                    id: rol._id,
+                                    name: rol.name,
+                                },
+                            });
+                            user.password = await user.encryptPassword(password);
+
+                            if (await user.save()) {
+                                return res.status(201).json({
+                                    status: true,
+                                    message: "El usuario ha sido registrado correctamente",
+                                });
+                            } else {
+                                return res.status(400).json({
+                                    status: false,
+                                    type: "general",
+                                    message: "Ha ocurrido un error por favor intentalo nuevamente.",
+                                });
+                            }
+                        } else {
+                            return res.status(400).json({
+                                status: false,
+                                type: "password",
+                                message: "La contraseña es requerida.",
+                            });
+                        }
                     } else {
                         return res.status(400).json({
                             status: false,
-                            type: "general",
-                            message: "Ha ocurrido un error por favor intentalo nuevamente.",
+                            type: "username",
+                            message: "El nombre de usuario es requerdio.",
                         });
                     }
                 } else {
                     return res.status(400).json({
                         status: false,
-                        type: "password",
-                        message: "La contraseña es requerida.",
+                        type: "email",
+                        message: "El email es requerido.",
                     });
                 }
             } else {
                 return res.status(400).json({
                     status: false,
-                    type: "username",
-                    message: "El nombre de usuario es requerdio.",
+                    type: "general",
+                    message: "No se ha encontrado el rol solicitado.",
                 });
             }
-        } else {
+        } catch (error) {
             return res.status(400).json({
                 status: false,
-                type: "email",
-                message: "El email es requerido.",
+                type: "general",
+                message: "Ha ocurrido un error.",
             });
         }
     } else {
         return res.status(400).json({
             status: false,
             type: "general",
-            message: "No se ha encontrado el rol solicitado.",
+            message: "El rol es requerido.",
         });
     }
 };
