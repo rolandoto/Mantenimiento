@@ -5,13 +5,13 @@ ac.grant("user").readAny("environment");
 
 ac.grant("admin")
     .extend("user")
-    .readAny("rol")
+    
     .updateAny("environment")
     .createAny("environment")
     .deleteAny("environment")
+    .readAny("rol")
     .deleteAny("rol")
     .updateAny("rol")
     .createAny("rol")
-    .deleteAny("rol");
 
 module.exports = ac;
