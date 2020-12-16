@@ -13,7 +13,7 @@ const ac = require("../middlewares/accessControl");
  */
 environmentMethods.getEnvironments = async (req, res) => {
     const permission = ac.can(req.user.rol.name).readAny("environment");
-    if (permission) {
+    if (permission.granted) {
         try {
             const environments = await Environment.find();
             return res.status(200).json({
@@ -46,7 +46,7 @@ environmentMethods.getEnvironments = async (req, res) => {
  */
 environmentMethods.getEnvironment = async (req, res) => {
     const permission = ac.can(req.user.rol.name).readAny("environment");
-    if (permission) {
+    if (permission.granted) {
         try {
             const environmentID = req.params.id;
             const environment = await Environment.findById(environmentID);
@@ -87,7 +87,7 @@ environmentMethods.getEnvironment = async (req, res) => {
  */
 environmentMethods.createEnvironment = async (req, res) => {
     const permission = ac.can(req.user.rol.name).createAny("environment");
-    if (permission) {
+    if (permission.granted) {
         const { environmentCode, name } = req.body;
         if (environmentCode && name) {
             try {
@@ -146,7 +146,7 @@ environmentMethods.createEnvironment = async (req, res) => {
  */
 environmentMethods.updateEnvironment = async (req, res) => {
     const permission = ac.can(req.user.rol.name).updateAny("environment");
-    if (permission) {
+    if (permission.granted) {
         const { environmentID, environmentCode, name } = req.body;
         if ((environmentCode, name)) {
             const compare = await Environment.findById(environmentID);
@@ -208,7 +208,7 @@ environmentMethods.updateEnvironment = async (req, res) => {
  */
 environmentMethods.deleteEnvironment = async (req, res) => {
     const permission = ac.can(req.user.rol.name).deleteAny("environment");
-    if (permission) {
+    if (permission.granted) {
         const { environmentID } = req.body;
         try {
             const getEnvironment = await Environment.findById(environmentID);

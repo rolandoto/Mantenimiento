@@ -1,9 +1,10 @@
 const machineMethods = {};
 const Machine = require("../models/Machine");
+const ac = require("../middlewares/accessControl");
 
 /**
  * Author: Juan Araque
- * Last modified: 11/30/2020
+ * Last modified: 12/16/2020
  *
  * @param {*} req
  * @param {*} res
@@ -11,24 +12,32 @@ const Machine = require("../models/Machine");
  * @return Object
  */
 machineMethods.getMachines = async (req, res) => {
-    try {
-        const machines = await Machine.find();
-        return res.status(200).json({
-            status: true,
-            machines,
-            message: "Se han encontrado maquinaría",
-        });
-    } catch (error) {
-        return res.status(400).json({
+    const permission = ac.can(req.user.rol.name).readAny("machine");
+    if (permission.granted) {
+        try {
+            const machines = await Machine.find();
+            return res.status(200).json({
+                status: true,
+                machines,
+                message: "Se han encontrado maquinaría",
+            });
+        } catch (error) {
+            return res.status(400).json({
+                status: false,
+                message: "Ha ocurrido un error",
+            });
+        }
+    } else {
+        return res.status(403).json({
             status: false,
-            message: "Ha ocurrido un error",
+            message: "No tienes permisos para acceder a este recurso",
         });
     }
 };
 
 /**
  * Author: Juan Araque
- * Last modified: 11/30/2020
+ * Last modified: 12/16/2020
  *
  * @param {*} req
  * @param {*} res
@@ -36,25 +45,33 @@ machineMethods.getMachines = async (req, res) => {
  * @return Object
  */
 machineMethods.getMachine = async (req, res) => {
-    try {
-        const machineID = req.params("id");
-        const machine = await Machine.findById(machineID);
-        return res.status(200).json({
-            status: true,
-            machine,
-            message: "Se han encontrado la maquina.",
-        });
-    } catch (error) {
-        return res.status(400).json({
+    const permission = ac.can(req.user.rol.name).readOwn("machine");
+    if (permission.granted) {
+        try {
+            const machineID = req.params("id");
+            const machine = await Machine.findById(machineID);
+            return res.status(200).json({
+                status: true,
+                machine,
+                message: "Se han encontrado la maquina.",
+            });
+        } catch (error) {
+            return res.status(400).json({
+                status: false,
+                message: "Ha ocurrido un error",
+            });
+        }
+    } else {
+        return res.status(403).json({
             status: false,
-            message: "Ha ocurrido un error",
+            message: "No tienes permisos para acceder a este recurso",
         });
     }
 };
 
 /**
  * Author: Juan Araque
- * Last modified: 11/30/2020
+ * Last modified: 12/16/2020
  *
  * @param {*} req
  * @param {*} res
@@ -62,57 +79,21 @@ machineMethods.getMachine = async (req, res) => {
  * @return Object
  */
 machineMethods.createMachine = async (req, res) => {
-    const { environment, name } = req.body;
-    if ((environment, name)) {
-        const machine = new Machine({
-            environment,
-            name,
-        });
-
-        if (await machine.save()) {
-            return res.status(201).json({
-                status: true,
-                message: "La maquina se ha creado correctamente.",
+    const permission = ac.can(req.user.rol.name).createAny("machine");
+    if (permission.granted) {
+        const { environment, name } = req.body;
+        if ((environment, name)) {
+            const machine = new Machine({
+                environment,
+                name,
             });
-        } else {
-            return res.status(400).json({
-                status: false,
-                message: "Ha ocurrido un error, intentalo nuevamente.",
-            });
-        }
-    } else {
-        return res.status(400).json({
-            status: false,
-            message: "Debes llenar los campos requeridos.",
-        });
-    }
-};
 
-/**
- * Author: Juan Araque
- * Last modified: 11/30/2020
- *
- * @param {*} req
- * @param {*} res
- *
- * @return Object
- */
-machineMethods.updateMachine = async (req, res) => {
-    const { machineID, environment, name } = req.body;
-    if ((environment, name)) {
-        const getMachine = await Machine.findById(machineID);
-        if (getMachine) {
-            try {
-                await getMachine.update({
-                    environment,
-                    name,
-                });
-
-                return res.status(400).json({
+            if (await machine.save()) {
+                return res.status(201).json({
                     status: true,
-                    message: "La maquina se ha actualizado correctamente.",
+                    message: "La maquina se ha creado correctamente.",
                 });
-            } catch (error) {
+            } else {
                 return res.status(400).json({
                     status: false,
                     message: "Ha ocurrido un error, intentalo nuevamente.",
@@ -121,20 +102,72 @@ machineMethods.updateMachine = async (req, res) => {
         } else {
             return res.status(400).json({
                 status: false,
-                message: "No se ha encontrado el recurso solicitado.",
+                message: "Debes llenar los campos requeridos.",
             });
         }
     } else {
-        return res.status(400).json({
+        return res.status(403).json({
             status: false,
-            message: "Debes llenar los campos requeridos.",
+            message: "No tienes permisos para acceder a este recurso",
         });
     }
 };
 
 /**
  * Author: Juan Araque
- * Last modified: 11/30/2020
+ * Last modified: 12/16/2020
+ *
+ * @param {*} req
+ * @param {*} res
+ *
+ * @return Object
+ */
+machineMethods.updateMachine = async (req, res) => {
+    const permission = ac.can(req.user.rol.name).updateAny("machine");
+    if (permission.granted) {
+        const { machineID, environment, name } = req.body;
+        if ((environment, name)) {
+            const getMachine = await Machine.findById(machineID);
+            if (getMachine) {
+                try {
+                    await getMachine.update({
+                        environment,
+                        name,
+                    });
+
+                    return res.status(400).json({
+                        status: true,
+                        message: "La maquina se ha actualizado correctamente.",
+                    });
+                } catch (error) {
+                    return res.status(400).json({
+                        status: false,
+                        message: "Ha ocurrido un error, intentalo nuevamente.",
+                    });
+                }
+            } else {
+                return res.status(400).json({
+                    status: false,
+                    message: "No se ha encontrado el recurso solicitado.",
+                });
+            }
+        } else {
+            return res.status(400).json({
+                status: false,
+                message: "Debes llenar los campos requeridos.",
+            });
+        }
+    } else {
+        return res.status(403).json({
+            status: false,
+            message: "No tienes permisos para acceder a este recurso",
+        });
+    }
+};
+
+/**
+ * Author: Juan Araque
+ * Last modified: 12/16/2020
  *
  * @param {*} req
  * @param {*} res
@@ -142,25 +175,33 @@ machineMethods.updateMachine = async (req, res) => {
  * @return Object
  */
 machineMethods.deleteMachine = async (req, res) => {
-    const { machineID } = req.body;
-    try {
-        const getMachine = await Machine.findById(machineID);
-        if (getMachine) {
-            getMachine.remove();
-            return res.status(201).json({
-                status: true,
-                message: "La maquina fue eliminada correctamente.",
-            });
-        } else {
+    const permission = ac.can(req.user.rol.name).deleteAny("machine");
+    if (permission.granted) {
+        const { machineID } = req.body;
+        try {
+            const getMachine = await Machine.findById(machineID);
+            if (getMachine) {
+                getMachine.remove();
+                return res.status(201).json({
+                    status: true,
+                    message: "La maquina fue eliminada correctamente.",
+                });
+            } else {
+                return res.status(400).json({
+                    status: false,
+                    message: "No se ha encontrado el recurso solicitado.",
+                });
+            }
+        } catch (error) {
             return res.status(400).json({
                 status: false,
-                message: "No se ha encontrado el recurso solicitado.",
+                message: "Ha ocurrido un error, intentalo nuevamente.",
             });
         }
-    } catch (error) {
-        return res.status(400).json({
+    } else {
+        return res.status(403).json({
             status: false,
-            message: "Ha ocurrido un error, intentalo nuevamente.",
+            message: "No tienes permisos para acceder a este recurso",
         });
     }
 };
