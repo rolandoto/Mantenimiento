@@ -4,6 +4,9 @@ const cors = require("cors");
 const helmet = require("helmet");
 const morgan = require("morgan");
 const path = require("path");
+const http = require("http");
+const socketIO = require("socket.io");
+const { connect, disconnect, users } = require("./utils/Users");
 
 // Allow access control
 app.use(cors());
@@ -21,7 +24,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Configure static files
-app.use(express.static(path.join(__dirname, "assets")));
+app.use(express.static(path.join(__dirname, "../public")));
 
 // Configure routes
 app.use("/user", require("./routes/users.route"));
@@ -31,4 +34,25 @@ app.use("/machine", require("./routes/machines.route"));
 app.use("/sparePart", require("./routes/spareParts.route"));
 app.use("/rol", require("./routes/rol.route"));
 
-module.exports = app;
+// Configure server
+const server = http.createServer(app);
+
+// Configure Socket server
+const io = socketIO(server, {
+    cors: {
+        origin: "http://localhost:3000",
+        method: ["GET", "POST", "PUT", "DELETE"],
+    },
+});
+
+io.on("connection", (socket) => {
+    socket.on("userConnect", (data) => {
+        connect(data);
+    });
+
+    socket.on("userDisconect", (data) => {
+        disconnect(data);
+    });
+});
+
+module.exports = server;

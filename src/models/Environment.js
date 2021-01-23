@@ -1,6 +1,10 @@
 const { Schema, model } = require("mongoose");
 
 const environmentSchema = new Schema({
+    environmentPhoto: {
+        type: Object,
+        required: true,
+    },
     environmentCode: {
         type: String,
         required: true,

@@ -6,6 +6,7 @@ const userSchema = new Schema({
         type: Object,
         required: true
     },
+    profileImage: Object,
     email: {
         type: String,
         required: true,
@@ -21,6 +22,13 @@ const userSchema = new Schema({
         required: true,
     },
     name: {
+        type: String,
+        required: true
+    },
+    phone: {
+        type: String,
+    },
+    city: {
         type: String,
     },
     create_at: {

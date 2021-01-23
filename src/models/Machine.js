@@ -1,8 +1,16 @@
 const { Schema, model } = require("mongoose");
 
 const machineSchema = new Schema({
-    environment: {
+    environmentID: {
         type: String,
+        required: true,
+    },
+    machineCode: {
+        type: String,
+        required: true,
+    },
+    machinePhoto: {
+        type: Object,
         required: true,
     },
     name: {

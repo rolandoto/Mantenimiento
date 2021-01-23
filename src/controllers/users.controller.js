@@ -2,6 +2,8 @@ const userMethods = {};
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const Rol = require("../models/Rol");
+const AC = require("../middlewares/accessControl");
+const fs = require("fs");
 
 async function getUserByParam(value, field) {
     const search = field === "email" ? { email: value } : { username: value };
@@ -29,34 +31,58 @@ userMethods.login = async (req, res) => {
         if (user) {
             const verifyPassword = await user.verifyPassword(password);
             if (verifyPassword) {
-                const token = await jwt.sign(user._id.toString(), process.env.SECRECT_KEY);
+                const token = await jwt.sign(
+                    user._id.toString(),
+                    process.env.SECRECT_KEY
+                );
                 if (!token) {
                     return res.status(400).json({
                         status: false,
-                        message: "Ha ocurrido un error, por favor intentalo de nuevo.",
+                        error: "general",
+                        message:
+                            "Ha ocurrido un error, por favor intentalo de nuevo.",
                     });
                 }
 
-                return res.status(200).json({
-                    status: true,
-                    token,
-                    message: "Credenciales correctas.",
-                });
+                try {
+                    const userFind = await User.findById(user._id, {
+                        name: true,
+                        email: true,
+                        username: true,
+                        phone: true,
+                        city: true,
+                        profileImage: true,
+                    });
+                    return res.status(200).json({
+                        status: true,
+                        token,
+                        user: userFind,
+                        message: "El token es correcto",
+                    });
+                } catch (error) {
+                    return res.status(400).json({
+                        status: false,
+                        message: "El token es incorrecto.",
+                    });
+                }
             } else {
                 return res.status(400).json({
                     status: false,
+                    error: "general",
                     message: "El usuario y/o la contraseña son incorrectos.",
                 });
             }
         } else {
             return res.status(400).json({
                 status: false,
+                error: "general",
                 message: "El usuario y/o la contraseña son incorrectos.",
             });
         }
     } else {
         return res.status(400).json({
             status: false,
+            error: "general",
             message: "El email y la contraseña son requeridas.",
         });
     }
@@ -88,7 +114,10 @@ userMethods.register = async (req, res) => {
                     }
 
                     if (username) {
-                        const getUserUsername = await getUserByParam(username, "username");
+                        const getUserUsername = await getUserByParam(
+                            username,
+                            "username"
+                        );
                         if (getUserUsername) {
                             return res.status(400).json({
                                 status: false,
@@ -108,18 +137,22 @@ userMethods.register = async (req, res) => {
                                     name: rol.name,
                                 },
                             });
-                            user.password = await user.encryptPassword(password);
+                            user.password = await user.encryptPassword(
+                                password
+                            );
 
                             if (await user.save()) {
                                 return res.status(201).json({
                                     status: true,
-                                    message: "El usuario ha sido registrado correctamente",
+                                    message:
+                                        "El usuario ha sido registrado correctamente",
                                 });
                             } else {
                                 return res.status(400).json({
                                     status: false,
                                     type: "general",
-                                    message: "Ha ocurrido un error por favor intentalo nuevamente.",
+                                    message:
+                                        "Ha ocurrido un error por favor intentalo nuevamente.",
                                 });
                             }
                         } else {
@@ -187,10 +220,27 @@ userMethods.authenticate = async (req, res) => {
 
         const verify = await jwt.verify(token, process.env.SECRECT_KEY);
         if (verify) {
-            return res.status(200).json({
-                status: true,
-                message: "El token es correcto",
-            });
+            try {
+                const user = await User.findById(verify, {
+                    name: true,
+                    email: true,
+                    username: true,
+                    phone: true,
+                    city: true,
+                    profileImage: true,
+                });
+                return res.status(200).json({
+                    status: true,
+                    token,
+                    user,
+                    message: "El token es correcto",
+                });
+            } catch (error) {
+                return res.status(400).json({
+                    status: false,
+                    message: "El token es incorrecto.",
+                });
+            }
         } else {
             return res.status(400).json({
                 status: false,
@@ -201,6 +251,131 @@ userMethods.authenticate = async (req, res) => {
         return res.status(400).json({
             status: false,
             message: "Ha ocurrido un error.",
+        });
+    }
+};
+
+/**
+ * Author: Juan Araque
+ * Last modified: 21/01/2021
+ *
+ * @param {*} req
+ * @param {*} res
+ *
+ * @return Object
+ */
+userMethods.updateUser = async (req, res) => {
+    const permission = AC.can(req.user.rol.name).updateOwn("profile").granted;
+    if (permission) {
+        const { email, username, name, phone, city } = req.body;
+        if (email && username && name) {
+            try {
+                const getUser = await User.findById(req.user._id);
+
+                if (getUser) {
+                    const verifyEmail = await getUserByParam(email, "email");
+                    if (verifyEmail && getUser.email !== email) {
+                        if (req.file) {
+                            fs.unlinkSync(req.file.path);
+                        }
+                        return res.status(400).json({
+                            status: false,
+                            message: "Este email ya esta en uso.",
+                        });
+                    }
+
+                    const verifyUsername = await getUserByParam(
+                        username,
+                        "username"
+                    );
+                    if (verifyUsername && getUser.username !== username) {
+                        if (req.file) {
+                            fs.unlinkSync(req.file.path);
+                        }
+                        return res.status(400).json({
+                            status: false,
+                            message: "Este nombre de usuario ya esta en uso.",
+                        });
+                    }
+
+                    const userUpdated = {
+                        email,
+                        username,
+                        name,
+                        phone,
+                        city,
+                    };
+
+                    if (req.file) {
+                        userUpdated.profileImage = {
+                            filename: req.file.filename,
+                            folder: "/img/users/",
+                        };
+
+                        if (getUser.profileImage) {
+                            fs.unlinkSync(
+                                __dirname +
+                                    "/../../public" +
+                                    getUser.profileImage.folder +
+                                    getUser.profileImage.filename
+                            );
+                        }
+                    }
+
+                    if (await getUser.updateOne(userUpdated)) {
+                        return res.status(200).json({
+                            status: true,
+                            user: await User.findById(req.user._id, {
+                                name: true,
+                                email: true,
+                                username: true,
+                                phone: true,
+                                city: true,
+                                profileImage: true,
+                            }),
+                            message:
+                                "El usuario ha sido actualizado correctamente.",
+                        });
+                    } else {
+                        return res.status(400).json({
+                            status: false,
+                            message:
+                                "Ha ocurrido un error, por favor intentalo nuevamente.",
+                        });
+                    }
+                } else {
+                    return res.status(400).json({
+                        status: false,
+                        message:
+                            "No se ha encontrado el recurso solicitado, intentalo nuevamente.",
+                    });
+                }
+            } catch (error) {
+                if (req.file) {
+                    fs.unlinkSync(req.file.path);
+                }
+                return res.status(400).json({
+                    status: false,
+                    message:
+                        "Ha ocurrido un error, por favor intentalo nuevamente.",
+                });
+            }
+        } else {
+            if (req.file) {
+                fs.unlinkSync(req.file.path);
+            }
+            return res.status(400).json({
+                status: false,
+                message: "Debes llenar los campos requeridos.",
+            });
+        }
+    } else {
+        if (req.file) {
+            fs.unlinkSync(req.file.path);
+        }
+        return res.status(403).json({
+            status: false,
+            message: "No tienes permisos para acceder a este recurso",
         });
     }
 };

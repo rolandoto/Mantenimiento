@@ -1,32 +1,39 @@
 const AccessControl = require("accesscontrol");
 const ac = new AccessControl();
 
-ac.grant("user").readAny("environment");
+ac.grant("user").readAny("environment").updateOwn("profile");
 
 ac.grant("admin")
     .extend("user")
-    
     .updateAny("environment")
     .createAny("environment")
-    .deleteAny("environment") 
+    .deleteAny("environment");
+
+ac.grant("admin")
     .readAny("rol")
     .deleteAny("rol")
     .updateAny("rol")
-    .createAny("rol")
+    .createAny("rol");
+
+ac.grant("admin")
     .readOwn("machine")
     .readAny("machine")
     .deleteAny("machine")
     .updateAny("machine")
-    .createAny("machine")
+    .createAny("machine");
+
+ac.grant("admin")
     .readOwn("maintenance")
     .readAny("maintenance")
     .deleteAny("maintenance")
     .updateAny("maintenance")
-    .createAny("maintenance")
+    .createAny("maintenance");
+
+ac.grant("admin")
     .readOwn("sparePart")
     .readAny("sparePart")
     .deleteAny("sparePart")
     .updateAny("sparePart")
-    .createAny("sparePart")
+    .createAny("sparePart");
 
 module.exports = ac;
