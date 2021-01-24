@@ -6,7 +6,7 @@ const fs = require("fs");
 
 /**
  * Author: Juan Araque
- * Last modified: 12/13/2020
+ * Last modified: 24/01/2021
  *
  * @param {*} req
  * @param {*} res
@@ -26,7 +26,7 @@ environmentMethods.getEnvironments = async (req, res) => {
         } catch (error) {
             return res.status(400).json({
                 status: false,
-                message: "Ha ocurrido un error",
+                message: "Ha ocurrido un error, intentalo nuevamente.",
             });
         }
     } else {
@@ -39,7 +39,7 @@ environmentMethods.getEnvironments = async (req, res) => {
 
 /**
  * Author: Juan Araque
- * Last modified: 23/01/2021
+ * Last modified: 24/01/2021
  *
  * @param {*} req
  * @param {*} res
@@ -63,35 +63,35 @@ environmentMethods.getEnvironment = async (req, res) => {
                             message: "Se han encontrado el ambiente",
                         });
                     } else {
-                        return res.status(400).json({
+                        return res.status(404).json({
                             status: false,
                             message: "No se encontro el ambiente.",
                         });
                     }
                 } catch (error) {}
             } else {
-                return res.status(400).json({
+                return res.status(200).json({
                     status: false,
-                    message: "El ID suministrado es incorrecto",
+                    message: "El ID suministrado es incorrecto.",
                 });
             }
         } catch (error) {
-            return res.status(400).json({
+            return res.status(200).json({
                 status: false,
-                message: "El ID suministrado es incorrecto",
+                message: "El ID suministrado es incorrecto.",
             });
         }
     } else {
         return res.status(403).json({
             status: false,
-            message: "No tienes permisos para acceder a este recurso",
+            message: "No tienes permisos para acceder a este recurso.",
         });
     }
 };
 
 /**
  * Author: Juan Araque
- * Last modified: 12/13/2020
+ * Last modified: 24/01/2021
  *
  * @param {*} req
  * @param {*} res
@@ -112,7 +112,7 @@ environmentMethods.createEnvironment = async (req, res) => {
                         if (req.file) {
                             fs.unlinkSync(req.file.path);
                         }
-                        return res.status(400).json({
+                        return res.status(200).json({
                             status: false,
                             message:
                                 "El código del ambiente ya se encuentra en uso.",
@@ -158,15 +158,15 @@ environmentMethods.createEnvironment = async (req, res) => {
                 if (req.file) {
                     fs.unlinkSync(req.file.path);
                 }
-                return res.status(400).json({
+                return res.status(200).json({
                     status: false,
                     message: "Debes llenar los campos requeridos.",
                 });
             }
         } else {
-            return res.status(400).json({
+            return res.status(200).json({
                 status: false,
-                message: "La foto del ambiente es requerida",
+                message: "La foto del ambiente es requerida.",
             });
         }
     } else {
@@ -182,7 +182,7 @@ environmentMethods.createEnvironment = async (req, res) => {
 
 /**
  * Author: Juan Araque
- * Last modified: 12/13/2020
+ * Last modified: 24/01/2021
  *
  * @param {*} req
  * @param {*} res
@@ -204,7 +204,7 @@ environmentMethods.updateEnvironment = async (req, res) => {
                         if (req.file) {
                             fs.unlinkSync(req.file.path);
                         }
-                        return res.status(400).json({
+                        return res.status(200).json({
                             status: false,
                             message:
                                 "El código del ambiente ya se encuentra en uso.",
@@ -256,13 +256,13 @@ environmentMethods.updateEnvironment = async (req, res) => {
                 if (req.file) {
                     fs.unlinkSync(req.file.path);
                 }
-                return res.status(400).json({
+                return res.status(200).json({
                     status: false,
                     message: "No se ha encontrado el recurso solicitado.",
                 });
             }
         } else {
-            return res.status(400).json({
+            return res.status(200).json({
                 status: false,
                 message: "Debes llenar los campos requeridos.",
             });
@@ -277,7 +277,7 @@ environmentMethods.updateEnvironment = async (req, res) => {
 
 /**
  * Author: Juan Araque
- * Last modified: 23/01/2021
+ * Last modified: 24/01/2021
  *
  * @param {*} req
  * @param {*} res
@@ -296,7 +296,7 @@ environmentMethods.deleteEnvironment = async (req, res) => {
                     { _id: true }
                 );
                 if (confirmMachines.length > 0) {
-                    return res.status(400).json({
+                    return res.status(200).json({
                         status: false,
                         message:
                             "Hay maquinas asignadas a este ambiente, debes eliminarlas o cambiar el ambiente asignado.",
@@ -317,7 +317,7 @@ environmentMethods.deleteEnvironment = async (req, res) => {
                     message: "El ambiente ha sido eliminado correctamente.",
                 });
             } else {
-                return res.status(400).json({
+                return res.status(200).json({
                     status: false,
                     message: "No se ha encontrado el recurso solicitado.",
                 });

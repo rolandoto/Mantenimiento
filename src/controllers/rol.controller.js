@@ -4,7 +4,7 @@ const ac = require("../middlewares/accessControl");
 
 /**
  * Author: Juan Araque
- * Last modified: 12/12/2020
+ * Last modified: 24/01/2021
  *
  * @param {*} req
  * @param {*} res
@@ -24,20 +24,21 @@ rolMethods.getRols = async (req, res) => {
         } catch (error) {
             return res.status(400).json({
                 status: false,
-                message: "Ha ocurrido un error",
+                message:
+                    "Ha ocurrido un error, por favor intentalo nuevamente.",
             });
         }
     } else {
         return res.status(403).json({
             status: false,
-            message: "No tienes permisos para acceder a este recurso",
+            message: "No tienes permisos para acceder a este recurso.",
         });
     }
 };
 
 /**
  * Author: Juan Araque
- * Last modified: 12/12/2020
+ * Last modified: 24/01/2021
  *
  * @param {*} req
  * @param {*} res
@@ -58,20 +59,21 @@ rolMethods.getRol = async (req, res) => {
         } catch (error) {
             return res.status(400).json({
                 status: false,
-                message: "Ha ocurrido un error",
+                message:
+                    "Ha ocurrido un error, por favor intentalo nuevamente.",
             });
         }
     } else {
         return res.status(403).json({
             status: false,
-            message: "No tienes permisos para acceder a este recurso",
+            message: "No tienes permisos para acceder a este recurso.",
         });
     }
 };
 
 /**
  * Author: Juan Araque
- * Last modified: 12/12/2020
+ * Last modified: 24/01/2021
  *
  * @param {*} req
  * @param {*} res
@@ -99,7 +101,7 @@ rolMethods.createRol = async (req, res) => {
                 });
             }
         } else {
-            return res.status(400).json({
+            return res.status(200).json({
                 status: false,
                 message: "Debes llenar los campos requeridos.",
             });
@@ -107,14 +109,14 @@ rolMethods.createRol = async (req, res) => {
     } else {
         return res.status(403).json({
             status: false,
-            message: "No tienes permisos para ejecutar esta acción",
+            message: "No tienes permisos para ejecutar esta acción.",
         });
     }
 };
 
 /**
  * Author: Juan Araque
- * Last modified: 12/12/2020
+ * Last modified: 24/01/2021
  *
  * @param {*} req
  * @param {*} res
@@ -141,23 +143,24 @@ rolMethods.updateRol = async (req, res) => {
                     } catch (error) {
                         return res.status(400).json({
                             status: false,
-                            message: "Ha ocurrido un error, intentalo nuevamente.",
+                            message:
+                                "Ha ocurrido un error, intentalo nuevamente.",
                         });
                     }
                 } else {
-                    return res.status(400).json({
+                    return res.status(404).json({
                         status: false,
                         message: "No se ha encontrado el recurso solicitado.",
                     });
                 }
             } else {
-                return res.status(400).json({
+                return res.status(200).json({
                     status: false,
                     message: "Debes llenar los campos requeridos.",
                 });
             }
         } else {
-            return res.status(400).json({
+            return res.status(200).json({
                 status: false,
                 message: "El ID es requerido.",
             });
@@ -165,14 +168,14 @@ rolMethods.updateRol = async (req, res) => {
     } else {
         return res.status(403).json({
             status: false,
-            message: "No tienes permisos para ejecutar esta acción",
+            message: "No tienes permisos para ejecutar esta acción.",
         });
     }
 };
 
 /**
  * Author: Juan Araque
- * Last modified: 12/12/2020
+ * Last modified: 24/01/2021
  *
  * @param {*} req
  * @param {*} res
@@ -193,7 +196,7 @@ rolMethods.deleteRol = async (req, res) => {
                         message: "El rol fue eliminado correctamente.",
                     });
                 } else {
-                    return res.status(400).json({
+                    return res.status(404).json({
                         status: false,
                         message: "No se ha encontrado el recurso solicitado.",
                     });
@@ -205,7 +208,7 @@ rolMethods.deleteRol = async (req, res) => {
                 });
             }
         } else {
-            return res.status(400).json({
+            return res.status(200).json({
                 status: false,
                 message: "El ID es requerido.",
             });
@@ -213,7 +216,7 @@ rolMethods.deleteRol = async (req, res) => {
     } else {
         return res.status(403).json({
             status: false,
-            message: "No tienes permisos para ejecutar esta acción",
+            message: "No tienes permisos para ejecutar esta acción.",
         });
     }
 };

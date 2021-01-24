@@ -5,7 +5,7 @@ const authMiddleware = async (req, res, next) => {
     try {
         const token = req.headers["authorization"];
         if (!token) {
-            return res.status(400).json({
+            return res.status(200).json({
                 status: false,
                 message: "El token es requerido.",
             });
@@ -18,14 +18,14 @@ const authMiddleware = async (req, res, next) => {
                 req.user = user;
                 next();
             } else {
-                return res.status(400).json({
+                return res.status(404).json({
                     status: false,
                     logout: true,
-                    message: "No existe el usuario",
+                    message: "El usuario no existe.",
                 });
             }
         } else {
-            return res.status(400).json({
+            return res.status(200).json({
                 status: false,
                 message: "El token es incorrecto.",
             });
@@ -33,7 +33,7 @@ const authMiddleware = async (req, res, next) => {
     } catch (error) {
         return res.status(400).json({
             status: false,
-            message: "Ha ocurrido un error.",
+            message: "Ha ocurrido un error, por favor intentalo nuevamente.",
         });
     }
 };

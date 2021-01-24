@@ -6,7 +6,7 @@ const fs = require("fs");
 
 /**
  * Author: Juan Araque
- * Last modified: 22/01/2021
+ * Last modified: 24/01/2021
  *
  * @param {*} req
  * @param {*} res
@@ -26,7 +26,7 @@ machineMethods.getMachines = async (req, res) => {
         } catch (error) {
             return res.status(400).json({
                 status: false,
-                message: "Ha ocurrido un error",
+                message: "Ha ocurrido un error, intentalo nuevamente.",
             });
         }
     } else {
@@ -39,7 +39,7 @@ machineMethods.getMachines = async (req, res) => {
 
 /**
  * Author: Juan Araque
- * Last modified: 23/01/2021
+ * Last modified: 24/01/2021
  *
  * @param {*} req
  * @param {*} res
@@ -59,7 +59,7 @@ machineMethods.getMachine = async (req, res) => {
                     message: "Se han encontrado la maquina.",
                 });
             } else {
-                return res.status(400).json({
+                return res.status(200).json({
                     status: false,
                     message: "El ID de la maquina es requerido.",
                 });
@@ -67,20 +67,21 @@ machineMethods.getMachine = async (req, res) => {
         } catch (error) {
             return res.status(400).json({
                 status: false,
-                message: "Ha ocurrido un error, por favor intentalo nuevamente",
+                message:
+                    "Ha ocurrido un error, por favor intentalo nuevamente.",
             });
         }
     } else {
         return res.status(403).json({
             status: false,
-            message: "No tienes permisos para acceder a este recurso",
+            message: "No tienes permisos para acceder a este recurso.",
         });
     }
 };
 
 /**
  * Author: Juan Araque
- * Last modified: 22/01/2021
+ * Last modified: 24/01/2021
  *
  * @param {*} req
  * @param {*} res
@@ -112,7 +113,7 @@ machineMethods.createMachine = async (req, res) => {
                         if (req.file) {
                             fs.unlinkSync(req.file.path);
                         }
-                        return res.status(400).json({
+                        return res.status(200).json({
                             status: false,
                             message: "El código del ambiente es incorrecto.",
                         });
@@ -125,7 +126,7 @@ machineMethods.createMachine = async (req, res) => {
                         if (req.file) {
                             fs.unlinkSync(req.file.path);
                         }
-                        return res.status(400).json({
+                        return res.status(200).json({
                             status: false,
                             message: "El código de la maquina ya esta en uso.",
                         });
@@ -176,7 +177,7 @@ machineMethods.createMachine = async (req, res) => {
                 if (req.file) {
                     fs.unlinkSync(req.file.path);
                 }
-                return res.status(400).json({
+                return res.status(200).json({
                     status: false,
                     message: "Debes llenar los campos requeridos.",
                 });
@@ -200,7 +201,7 @@ machineMethods.createMachine = async (req, res) => {
 
 /**
  * Author: Juan Araque
- * Last modified: 22/01/2021
+ * Last modified: 24/01/2021
  *
  * @param {*} req
  * @param {*} res
@@ -226,7 +227,7 @@ machineMethods.updateMachine = async (req, res) => {
                             if (req.file) {
                                 fs.unlinkSync(req.file.path);
                             }
-                            return res.status(400).json({
+                            return res.status(200).json({
                                 status: false,
                                 message:
                                     "El código de la maquina ya esta en uso.",
@@ -277,7 +278,7 @@ machineMethods.updateMachine = async (req, res) => {
                     if (req.file) {
                         fs.unlinkSync(req.file.path);
                     }
-                    return res.status(400).json({
+                    return res.status(404).json({
                         status: false,
                         message: "No se ha encontrado el recurso solicitado.",
                     });
@@ -286,7 +287,7 @@ machineMethods.updateMachine = async (req, res) => {
                 if (req.file) {
                     fs.unlinkSync(req.file.path);
                 }
-                return res.status(400).json({
+                return res.status(200).json({
                     status: false,
                     message: "Debes llenar los campos requeridos.",
                 });
@@ -295,7 +296,7 @@ machineMethods.updateMachine = async (req, res) => {
             if (req.file) {
                 fs.unlinkSync(req.file.path);
             }
-            return res.status(400).json({
+            return res.status(200).json({
                 status: false,
                 message: "El ID de la maquina es requerido.",
             });
@@ -313,7 +314,7 @@ machineMethods.updateMachine = async (req, res) => {
 
 /**
  * Author: Juan Araque
- * Last modified: 22/01/2021
+ * Last modified: 24/01/2021
  *
  * @param {*} req
  * @param {*} res
@@ -350,6 +351,52 @@ machineMethods.deleteMachine = async (req, res) => {
             return res.status(400).json({
                 status: false,
                 message: "Ha ocurrido un error, intentalo nuevamente.",
+            });
+        }
+    } else {
+        return res.status(403).json({
+            status: false,
+            message: "No tienes permisos para acceder a este recurso",
+        });
+    }
+};
+
+/**
+ * Author: Juan Araque
+ * Last modified: 24/01/2021
+ *
+ * @param {*} req
+ * @param {*} res
+ *
+ * @return Object
+ */
+machineMethods.registerMachineUse = async (req, res) => {
+    const permission = ac.can(req.user.rol.name).createAny("machineUse")
+        .granted;
+    if (permission) {
+        const { machineID, hours, note } = req.body;
+        if (machineID) {
+            try {
+                const machine = await Machine.findById(machineID);
+                if (hours && note) {
+                    return res.json(machine);
+                } else {
+                    return res.status(200).json({
+                        status: false,
+                        message: "Todos los campos son requeridos.",
+                    });
+                }
+            } catch (error) {
+                return res.status(405).json({
+                    status: false,
+                    message:
+                        "Ha ocurrido un error, por favor intentalo nuevamente.",
+                });
+            }
+        } else {
+            return res.status(200).json({
+                status: false,
+                message: "El ID de la maquina es requerido.",
             });
         }
     } else {

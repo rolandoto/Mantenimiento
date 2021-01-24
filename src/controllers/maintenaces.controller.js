@@ -4,7 +4,7 @@ const ac = require("../middlewares/accessControl");
 
 /**
  * Author: Juan Araque
- * Last modified: 12/11/2020
+ * Last modified: 24/01/2021
  *
  * @param {*} req
  * @param {*} res
@@ -24,20 +24,21 @@ maintenacesMethods.getMaintenances = async (req, res) => {
         } catch (error) {
             return res.status(400).json({
                 status: false,
-                message: "Ha ocurrido un error",
+                message:
+                    "Ha ocurrido un error, por favor intentalo nuevamente.",
             });
         }
     } else {
         return res.status(403).json({
             status: false,
-            message: "No tienes permisos para acceder a este recurso",
+            message: "No tienes permisos para acceder a este recurso.",
         });
     }
 };
 
 /**
  * Author: Juan Araque
- * Last modified: 12/11/2020
+ * Last modified: 24/01/2021
  *
  * @param {*} req
  * @param {*} res
@@ -53,25 +54,26 @@ maintenacesMethods.getMaintenance = async (req, res) => {
             return res.status(200).json({
                 status: true,
                 maintenance,
-                message: "Se ha encontrado el mantenimiento..",
+                message: "Se ha encontrado el mantenimiento.",
             });
         } catch (error) {
             return res.status(400).json({
                 status: false,
-                message: "Ha ocurrido un error",
+                message:
+                    "Ha ocurrido un error, por favor intentalo nuevamente.",
             });
         }
     } else {
         return res.status(403).json({
             status: false,
-            message: "No tienes permisos para acceder a este recurso",
+            message: "No tienes permisos para acceder a este recurso.",
         });
     }
 };
 
 /**
  * Author: Juan Araque
- * Last modified: 12/11/2020
+ * Last modified: 24/01/2021
  *
  * @param {*} req
  * @param {*} res
@@ -100,7 +102,7 @@ maintenacesMethods.createMaintenance = async (req, res) => {
                 });
             }
         } else {
-            return res.status(400).json({
+            return res.status(200).json({
                 status: false,
                 message: "Debes llenar los campos requeridos.",
             });
@@ -108,14 +110,14 @@ maintenacesMethods.createMaintenance = async (req, res) => {
     } else {
         return res.status(403).json({
             status: false,
-            message: "No tienes permisos para acceder a este recurso",
+            message: "No tienes permisos para acceder a este recurso.",
         });
     }
 };
 
 /**
  * Author: Juan Araque
- * Last modified: 12/11/2020
+ * Last modified: 24/01/2021
  *
  * @param {*} req
  * @param {*} res
@@ -135,9 +137,10 @@ maintenacesMethods.updateMaintenance = async (req, res) => {
                         name,
                     });
 
-                    return res.status(400).json({
+                    return res.status(200).json({
                         status: true,
-                        message: "El mantenimiento se ha actualizado correctamente.",
+                        message:
+                            "El mantenimiento se ha actualizado correctamente.",
                     });
                 } catch (error) {
                     return res.status(400).json({
@@ -146,13 +149,13 @@ maintenacesMethods.updateMaintenance = async (req, res) => {
                     });
                 }
             } else {
-                return res.status(400).json({
+                return res.status(404).json({
                     status: false,
                     message: "No se ha encontrado el recurso solicitado.",
                 });
             }
         } else {
-            return res.status(400).json({
+            return res.status(200).json({
                 status: false,
                 message: "Debes llenar los campos requeridos.",
             });
@@ -160,14 +163,14 @@ maintenacesMethods.updateMaintenance = async (req, res) => {
     } else {
         return res.status(403).json({
             status: false,
-            message: "No tienes permisos para acceder a este recurso",
+            message: "No tienes permisos para acceder a este recurso.",
         });
     }
 };
 
 /**
  * Author: Juan Araque
- * Last modified: 12/11/2020
+ * Last modified: 24/01/2021
  *
  * @param {*} req
  * @param {*} res
@@ -187,7 +190,7 @@ maintenacesMethods.deleteMaintenance = async (req, res) => {
                     message: "El mantenimiento fue eliminado correctamente.",
                 });
             } else {
-                return res.status(400).json({
+                return res.status(404).json({
                     status: false,
                     message: "No se ha encontrado el recurso solicitado.",
                 });
@@ -201,7 +204,7 @@ maintenacesMethods.deleteMaintenance = async (req, res) => {
     } else {
         return res.status(403).json({
             status: false,
-            message: "No tienes permisos para acceder a este recurso",
+            message: "No tienes permisos para acceder a este recurso.",
         });
     }
 };

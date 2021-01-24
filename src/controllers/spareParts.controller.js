@@ -4,7 +4,7 @@ const ac = require("../middlewares/accessControl");
 
 /**
  * Author: Juan Araque
- * Last modified: 12/26/2020
+ * Last modified: 24/01/2021
  *
  * @param {*} req
  * @param {*} res
@@ -24,20 +24,21 @@ sparePartsMethods.getSpareParts = async (req, res) => {
         } catch (error) {
             return res.status(400).json({
                 status: false,
-                message: "Ha ocurrido un error",
+                message:
+                    "Ha ocurrido un error, por favor intentalo nuevamente.",
             });
         }
     } else {
         return res.status(403).json({
             status: false,
-            message: "No tienes permisos para acceder a este recurso",
+            message: "No tienes permisos para acceder a este recurso.",
         });
     }
 };
 
 /**
  * Author: Juan Araque
- * Last modified: 12/26/2020
+ * Last modified: 24/01/2021
  *
  * @param {*} req
  * @param {*} res
@@ -58,20 +59,20 @@ sparePartsMethods.getSparePart = async (req, res) => {
         } catch (error) {
             return res.status(400).json({
                 status: false,
-                message: "Ha ocurrido un error",
+                message: "Ha ocurrido un error, por favor intetalo nuevamente.",
             });
         }
     } else {
         return res.status(403).json({
             status: false,
-            message: "No tienes permisos para acceder a este recurso",
+            message: "No tienes permisos para acceder a este recurso.",
         });
     }
 };
 
 /**
  * Author: Juan Araque
- * Last modified: 12/26/2020
+ * Last modified: 24/01/2021
  *
  * @param {*} req
  * @param {*} res
@@ -99,7 +100,7 @@ sparePartsMethods.createSparePart = async (req, res) => {
                 });
             }
         } else {
-            return res.status(400).json({
+            return res.status(200).json({
                 status: false,
                 message: "Debes llenar los campos requeridos.",
             });
@@ -107,14 +108,14 @@ sparePartsMethods.createSparePart = async (req, res) => {
     } else {
         return res.status(403).json({
             status: false,
-            message: "No tienes permisos para acceder a este recurso",
+            message: "No tienes permisos para acceder a este recurso.",
         });
     }
 };
 
 /**
  * Author: Juan Araque
- * Last modified: 12/26/2020
+ * Last modified: 24/01/2021
  *
  * @param {*} req
  * @param {*} res
@@ -133,9 +134,10 @@ sparePartsMethods.updateSparePart = async (req, res) => {
                         name,
                     });
 
-                    return res.status(400).json({
+                    return res.status(200).json({
                         status: true,
-                        message: "La pieza de repuesto se ha actualizado correctamente.",
+                        message:
+                            "La pieza de repuesto se ha actualizado correctamente.",
                     });
                 } catch (error) {
                     return res.status(400).json({
@@ -144,13 +146,13 @@ sparePartsMethods.updateSparePart = async (req, res) => {
                     });
                 }
             } else {
-                return res.status(400).json({
+                return res.status(404).json({
                     status: false,
                     message: "No se ha encontrado el recurso solicitado.",
                 });
             }
         } else {
-            return res.status(400).json({
+            return res.status(200).json({
                 status: false,
                 message: "Debes llenar los campos requeridos.",
             });
@@ -158,14 +160,14 @@ sparePartsMethods.updateSparePart = async (req, res) => {
     } else {
         return res.status(403).json({
             status: false,
-            message: "No tienes permisos para acceder a este recurso",
+            message: "No tienes permisos para acceder a este recurso.",
         });
     }
 };
 
 /**
  * Author: Juan Araque
- * Last modified: 12/26/2020
+ * Last modified: 24/01/2021
  *
  * @param {*} req
  * @param {*} res
@@ -182,10 +184,11 @@ sparePartsMethods.deleteSparePart = async (req, res) => {
                 getsparePart.remove();
                 return res.status(201).json({
                     status: true,
-                    message: "La pieza de repuesto fue eliminada correctamente.",
+                    message:
+                        "La pieza de repuesto fue eliminada correctamente.",
                 });
             } else {
-                return res.status(400).json({
+                return res.status(404).json({
                     status: false,
                     message: "No se ha encontrado el recurso solicitado.",
                 });
@@ -199,7 +202,7 @@ sparePartsMethods.deleteSparePart = async (req, res) => {
     } else {
         return res.status(403).json({
             status: false,
-            message: "No tienes permisos para acceder a este recurso",
+            message: "No tienes permisos para acceder a este recurso.",
         });
     }
 };

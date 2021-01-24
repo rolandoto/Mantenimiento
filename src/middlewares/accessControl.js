@@ -1,7 +1,10 @@
 const AccessControl = require("accesscontrol");
 const ac = new AccessControl();
 
-ac.grant("user").readAny("environment").updateOwn("profile");
+ac.grant("user")
+    .readAny("environment")
+    .updateOwn("profile")
+    .createAny("machineUse");
 
 ac.grant("admin")
     .extend("user")

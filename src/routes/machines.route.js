@@ -6,6 +6,7 @@ const {
     createMachine,
     updateMachine,
     deleteMachine,
+    registerMachineUse,
 } = require("../controllers/machines.controller");
 const authMiddleware = require("../middlewares/authMiddleware");
 const upload = require("../middlewares/uploadMiddleware");
@@ -13,6 +14,7 @@ const upload = require("../middlewares/uploadMiddleware");
 router
     .get("/getMachines", authMiddleware, getMachines)
     .get("/getMachine/:id", authMiddleware, getMachine)
+    .post("/registerMachineUse", authMiddleware, registerMachineUse)
     .post(
         "/createMachine",
         authMiddleware,

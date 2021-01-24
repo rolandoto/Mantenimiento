@@ -17,7 +17,7 @@ async function getUserByParam(value, field) {
 
 /**
  * Author: Juan Araque
- * Last modified: 11/29/2020
+ * Last modified: 24/01/2021
  *
  * @param {*} req
  * @param {*} res
@@ -60,27 +60,27 @@ userMethods.login = async (req, res) => {
                         message: "El token es correcto",
                     });
                 } catch (error) {
-                    return res.status(400).json({
+                    return res.status(200).json({
                         status: false,
                         message: "El token es incorrecto.",
                     });
                 }
             } else {
-                return res.status(400).json({
+                return res.status(200).json({
                     status: false,
                     error: "general",
                     message: "El usuario y/o la contraseña son incorrectos.",
                 });
             }
         } else {
-            return res.status(400).json({
+            return res.status(200).json({
                 status: false,
                 error: "general",
                 message: "El usuario y/o la contraseña son incorrectos.",
             });
         }
     } else {
-        return res.status(400).json({
+        return res.status(200).json({
             status: false,
             error: "general",
             message: "El email y la contraseña son requeridas.",
@@ -90,7 +90,7 @@ userMethods.login = async (req, res) => {
 
 /**
  * Author: Juan Araque
- * Last modified: 11/29/2020
+ * Last modified: 24/01/2021
  *
  * @param {*} req
  * @param {*} res
@@ -106,7 +106,7 @@ userMethods.register = async (req, res) => {
                 if (email) {
                     const getUserEmail = await getUserByParam(email, "email");
                     if (getUserEmail) {
-                        return res.status(400).json({
+                        return res.status(200).json({
                             status: false,
                             type: "email",
                             message: "El email ya esta en uso.",
@@ -119,7 +119,7 @@ userMethods.register = async (req, res) => {
                             "username"
                         );
                         if (getUserUsername) {
-                            return res.status(400).json({
+                            return res.status(200).json({
                                 status: false,
                                 type: "username",
                                 message: "El nombre de usuario ya esta en uso.",
@@ -156,28 +156,28 @@ userMethods.register = async (req, res) => {
                                 });
                             }
                         } else {
-                            return res.status(400).json({
+                            return res.status(200).json({
                                 status: false,
                                 type: "password",
                                 message: "La contraseña es requerida.",
                             });
                         }
                     } else {
-                        return res.status(400).json({
+                        return res.status(200).json({
                             status: false,
                             type: "username",
                             message: "El nombre de usuario es requerdio.",
                         });
                     }
                 } else {
-                    return res.status(400).json({
+                    return res.status(200).json({
                         status: false,
                         type: "email",
                         message: "El email es requerido.",
                     });
                 }
             } else {
-                return res.status(400).json({
+                return res.status(404).json({
                     status: false,
                     type: "general",
                     message: "No se ha encontrado el rol solicitado.",
@@ -187,11 +187,12 @@ userMethods.register = async (req, res) => {
             return res.status(400).json({
                 status: false,
                 type: "general",
-                message: "Ha ocurrido un error.",
+                message:
+                    "Ha ocurrido un error, por favor intentalo nuevamente.",
             });
         }
     } else {
-        return res.status(400).json({
+        return res.status(200).json({
             status: false,
             type: "general",
             message: "El rol es requerido.",
@@ -201,7 +202,7 @@ userMethods.register = async (req, res) => {
 
 /**
  * Author: Juan Araque
- * Last modified: 11/29/2020
+ * Last modified: 24/01/2021
  *
  * @param {*} req
  * @param {*} res
@@ -212,7 +213,7 @@ userMethods.authenticate = async (req, res) => {
     const token = req.headers["authorization"];
     try {
         if (!token) {
-            return res.status(400).json({
+            return res.status(200).json({
                 status: false,
                 message: "El token es requerido.",
             });
@@ -236,13 +237,13 @@ userMethods.authenticate = async (req, res) => {
                     message: "El token es correcto",
                 });
             } catch (error) {
-                return res.status(400).json({
+                return res.status(200).json({
                     status: false,
                     message: "El token es incorrecto.",
                 });
             }
         } else {
-            return res.status(400).json({
+            return res.status(200).json({
                 status: false,
                 message: "El token es incorrecto.",
             });
@@ -250,14 +251,14 @@ userMethods.authenticate = async (req, res) => {
     } catch (error) {
         return res.status(400).json({
             status: false,
-            message: "Ha ocurrido un error.",
+            message: "Ha ocurrido un error, por favor intentalo nuevamente.",
         });
     }
 };
 
 /**
  * Author: Juan Araque
- * Last modified: 21/01/2021
+ * Last modified: 24/01/2021
  *
  * @param {*} req
  * @param {*} res
@@ -278,7 +279,7 @@ userMethods.updateUser = async (req, res) => {
                         if (req.file) {
                             fs.unlinkSync(req.file.path);
                         }
-                        return res.status(400).json({
+                        return res.status(200).json({
                             status: false,
                             message: "Este email ya esta en uso.",
                         });
@@ -292,7 +293,7 @@ userMethods.updateUser = async (req, res) => {
                         if (req.file) {
                             fs.unlinkSync(req.file.path);
                         }
-                        return res.status(400).json({
+                        return res.status(200).json({
                             status: false,
                             message: "Este nombre de usuario ya esta en uso.",
                         });
@@ -344,7 +345,7 @@ userMethods.updateUser = async (req, res) => {
                         });
                     }
                 } else {
-                    return res.status(400).json({
+                    return res.status(404).json({
                         status: false,
                         message:
                             "No se ha encontrado el recurso solicitado, intentalo nuevamente.",
@@ -364,7 +365,7 @@ userMethods.updateUser = async (req, res) => {
             if (req.file) {
                 fs.unlinkSync(req.file.path);
             }
-            return res.status(400).json({
+            return res.status(200).json({
                 status: false,
                 message: "Debes llenar los campos requeridos.",
             });
