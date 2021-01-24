@@ -39,7 +39,7 @@ machineMethods.getMachines = async (req, res) => {
 
 /**
  * Author: Juan Araque
- * Last modified: 22/01/2021
+ * Last modified: 23/01/2021
  *
  * @param {*} req
  * @param {*} res
@@ -51,16 +51,23 @@ machineMethods.getMachine = async (req, res) => {
     if (permission.granted) {
         try {
             const machineID = req.params("id");
-            const machine = await Machine.findById(machineID);
-            return res.status(200).json({
-                status: true,
-                machine,
-                message: "Se han encontrado la maquina.",
-            });
+            if (machineID) {
+                const machine = await Machine.findById(machineID);
+                return res.status(200).json({
+                    status: true,
+                    machine,
+                    message: "Se han encontrado la maquina.",
+                });
+            } else {
+                return res.status(400).json({
+                    status: false,
+                    message: "El ID de la maquina es requerido.",
+                });
+            }
         } catch (error) {
             return res.status(400).json({
                 status: false,
-                message: "Ha ocurrido un error",
+                message: "Ha ocurrido un error, por favor intentalo nuevamente",
             });
         }
     } else {
@@ -83,9 +90,20 @@ machineMethods.getMachine = async (req, res) => {
 machineMethods.createMachine = async (req, res) => {
     const permission = ac.can(req.user.rol.name).createAny("machine");
     if (permission.granted) {
-        const { environmentID, machineCode, name } = req.body;
+        const {
+            environmentID,
+            machineCode,
+            name,
+            totalHoursToMaintenance,
+            totalHoursWorking,
+        } = req.body;
         if (req.file) {
-            if (environmentID && machineCode && name) {
+            if (
+                environmentID &&
+                machineCode &&
+                name &&
+                totalHoursToMaintenance
+            ) {
                 try {
                     const environmnet = await Environment.findById(
                         environmentID
@@ -117,6 +135,8 @@ machineMethods.createMachine = async (req, res) => {
                         environmentID,
                         machineCode,
                         name,
+                        totalHoursToMaintenance,
+                        totalHoursWorking,
                     };
                     if (req.file) {
                         machineData.machinePhoto = {

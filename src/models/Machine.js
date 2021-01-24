@@ -17,6 +17,18 @@ const machineSchema = new Schema({
         type: String,
         required: true,
     },
+    totalHoursWorking: {
+        type: Number,
+        default: 0,
+    },
+    totalHoursToMaintenance: {
+        type: Number,
+        default: 0,
+    },
+    spareParts: [Object],
+    notes: [Object],
+    maintenances: [Object],
+    machineUsers: [Object],
     create_at: {
         type: Date,
         default: new Date(),

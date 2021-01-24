@@ -1,5 +1,6 @@
 const environmentMethods = {};
 const Environment = require("../models/Environment");
+const Machine = require("../models/Machine");
 const ac = require("../middlewares/accessControl");
 const fs = require("fs");
 
@@ -38,7 +39,7 @@ environmentMethods.getEnvironments = async (req, res) => {
 
 /**
  * Author: Juan Araque
- * Last modified: 12/13/2020
+ * Last modified: 23/01/2021
  *
  * @param {*} req
  * @param {*} res
@@ -50,17 +51,28 @@ environmentMethods.getEnvironment = async (req, res) => {
     if (permission.granted) {
         try {
             const environmentID = req.params.id;
-            const environment = await Environment.findById(environmentID);
-            if (environment) {
-                return res.status(200).json({
-                    status: true,
-                    environment,
-                    message: "Se han encontrado el ambiente",
-                });
+            if (environmentID) {
+                try {
+                    const environment = await Environment.findById(
+                        environmentID
+                    );
+                    if (environment) {
+                        return res.status(200).json({
+                            status: true,
+                            environment,
+                            message: "Se han encontrado el ambiente",
+                        });
+                    } else {
+                        return res.status(400).json({
+                            status: false,
+                            message: "No se encontro el ambiente.",
+                        });
+                    }
+                } catch (error) {}
             } else {
                 return res.status(400).json({
                     status: false,
-                    message: "No se encontro el ambiente.",
+                    message: "El ID suministrado es incorrecto",
                 });
             }
         } catch (error) {
@@ -265,7 +277,7 @@ environmentMethods.updateEnvironment = async (req, res) => {
 
 /**
  * Author: Juan Araque
- * Last modified: 12/13/2020
+ * Last modified: 23/01/2021
  *
  * @param {*} req
  * @param {*} res
@@ -279,6 +291,18 @@ environmentMethods.deleteEnvironment = async (req, res) => {
         try {
             const getEnvironment = await Environment.findById(environmentID);
             if (getEnvironment) {
+                const confirmMachines = await Machine.find(
+                    { environmentID },
+                    { _id: true }
+                );
+                if (confirmMachines.length > 0) {
+                    return res.status(400).json({
+                        status: false,
+                        message:
+                            "Hay maquinas asignadas a este ambiente, debes eliminarlas o cambiar el ambiente asignado.",
+                    });
+                }
+
                 if (getEnvironment.environmentPhoto.filename) {
                     fs.unlinkSync(
                         __dirname +

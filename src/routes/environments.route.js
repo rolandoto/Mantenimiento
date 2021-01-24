@@ -13,8 +13,18 @@ const authMiddleware = require("../middlewares/authMiddleware");
 router
     .get("/getEnvironment/:id", authMiddleware, getEnvironment)
     .get("/getEnvironments", authMiddleware, getEnvironments)
-    .post("/createEnvironment", authMiddleware, upload("environments").single("environmentPhoto"), createEnvironment)
-    .put("/updateEnvironment", authMiddleware,  upload("environments").single("environmentPhoto"), updateEnvironment)
+    .post(
+        "/createEnvironment",
+        authMiddleware,
+        upload("environments").single("environmentPhoto"),
+        createEnvironment
+    )
+    .put(
+        "/updateEnvironment",
+        authMiddleware,
+        upload("environments").single("environmentPhoto"),
+        updateEnvironment
+    )
     .delete("/deleteEnvironment", authMiddleware, deleteEnvironment);
 
 module.exports = router;
