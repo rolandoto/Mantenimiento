@@ -4,6 +4,7 @@ const User = require("../models/User");
 const Rol = require("../models/Rol");
 const AC = require("../middlewares/accessControl");
 const fs = require("fs");
+const { roles } = require("../config/config");
 
 async function getUserByParam(value, field) {
     const search = field === "email" ? { email: value } : { username: value };
@@ -51,14 +52,32 @@ userMethods.login = async (req, res) => {
                         username: true,
                         phone: true,
                         city: true,
+                        rol: true,
                         profileImage: true,
                     });
-                    return res.status(200).json({
-                        status: true,
-                        token,
-                        user: userFind,
-                        message: "El token es correcto",
-                    });
+                    if (
+                        user.rol.name ===
+                        Object.keys(roles).find(
+                            (key) => roles[key] === roles.admin
+                        )
+                    ) {
+                        return res.status(200).json({
+                            status: true,
+                            access: true,
+                            token,
+                            user: userFind,
+                            message: "El token es correcto",
+                        });
+                    } else {
+                        return res.status(200).json({
+                            status: false,
+                            access: true,
+                            token,
+                            user: userFind,
+                            error: "general",
+                            message: "No tienes permiso para acceder.",
+                        });
+                    }
                 } catch (error) {
                     return res.status(200).json({
                         status: false,
@@ -228,14 +247,25 @@ userMethods.authenticate = async (req, res) => {
                     username: true,
                     phone: true,
                     city: true,
+                    rol: true,
                     profileImage: true,
                 });
-                return res.status(200).json({
-                    status: true,
-                    token,
-                    user,
-                    message: "El token es correcto",
-                });
+                if (
+                    user.rol.name ===
+                    Object.keys(roles).find((key) => roles[key] === roles.admin)
+                ) {
+                    return res.status(200).json({
+                        status: true,
+                        token,
+                        user,
+                        message: "El token es correcto",
+                    });
+                } else {
+                    return res.status(200).json({
+                        status: false,
+                        message: "No tienes permiso para acceder.",
+                    });
+                }
             } catch (error) {
                 return res.status(200).json({
                     status: false,

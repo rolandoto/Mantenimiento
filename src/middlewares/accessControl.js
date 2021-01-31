@@ -4,6 +4,8 @@ const ac = new AccessControl();
 ac.grant("user")
     .readAny("environment")
     .updateOwn("profile")
+    .readAny("notification")
+    .deleteAny("notification")
     .createAny("machineUse");
 
 ac.grant("admin")
@@ -24,6 +26,13 @@ ac.grant("admin")
     .deleteAny("machine")
     .updateAny("machine")
     .createAny("machine");
+
+ac.grant("admin")
+    .readOwn("maintenanceType")
+    .readAny("maintenanceType")
+    .deleteAny("maintenanceType")
+    .updateAny("maintenanceType")
+    .createAny("maintenanceType");
 
 ac.grant("admin")
     .readOwn("maintenance")

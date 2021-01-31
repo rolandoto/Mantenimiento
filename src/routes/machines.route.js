@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const {
     getMachines,
-    getMachine,
+    getMachineNoAuth,
     createMachine,
     updateMachine,
     deleteMachine,
@@ -13,7 +13,7 @@ const upload = require("../middlewares/uploadMiddleware");
 
 router
     .get("/getMachines", authMiddleware, getMachines)
-    .get("/getMachine/:id", authMiddleware, getMachine)
+    .get("/getMachineNoAuth/:id", getMachineNoAuth)
     .post("/registerMachineUse", authMiddleware, registerMachineUse)
     .post(
         "/createMachine",

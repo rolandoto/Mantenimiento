@@ -1,8 +1,12 @@
 const machineMethods = {};
 const Machine = require("../models/Machine");
+const MachineUse = require("../models/MachineUse");
 const Environment = require("../models/Environment");
+const Notification = require("../models/Notification");
 const ac = require("../middlewares/accessControl");
+const mongoose = require("mongoose");
 const fs = require("fs");
+const { maintenanceStatus } = require("../config/config");
 
 /**
  * Author: Juan Araque
@@ -17,7 +21,25 @@ machineMethods.getMachines = async (req, res) => {
     const permission = ac.can(req.user.rol.name).readAny("machine");
     if (permission.granted) {
         try {
-            const machines = await (await Machine.find()).reverse();
+            const machines = await (
+                await Machine.find()
+                    .populate({
+                        path: "machineUses",
+                        populate: {
+                            path: "user",
+                            model: "User",
+                            select: "name",
+                        },
+                    })
+                    .populate({
+                        path: "maintenances",
+                        populate: {
+                            path: "maintenanceType",
+                            model: "MaintenanceType",
+                        },
+                    })
+            ).reverse();
+
             return res.status(200).json({
                 status: true,
                 machines,
@@ -46,35 +68,33 @@ machineMethods.getMachines = async (req, res) => {
  *
  * @return Object
  */
-machineMethods.getMachine = async (req, res) => {
-    const permission = ac.can(req.user.rol.name).readOwn("machine");
-    if (permission.granted) {
-        try {
-            const machineID = req.params("id");
-            if (machineID) {
-                const machine = await Machine.findById(machineID);
-                return res.status(200).json({
-                    status: true,
-                    machine,
-                    message: "Se han encontrado la maquina.",
-                });
-            } else {
-                return res.status(200).json({
-                    status: false,
-                    message: "El ID de la maquina es requerido.",
-                });
-            }
-        } catch (error) {
-            return res.status(400).json({
+machineMethods.getMachineNoAuth = async (req, res) => {
+    try {
+        const machineID = req.params["id"];
+        if (machineID) {
+            const machine = await Machine.findById(machineID, {
+                machineCode: true,
+                name: true,
+                status: true,
+                _id: true,
+                machinePhoto: true,
+            });
+            return res.status(200).json({
+                state: true,
+                machine,
+                status: maintenanceStatus[machine.status],
+                message: "Se han encontrado la maquina.",
+            });
+        } else {
+            return res.status(200).json({
                 status: false,
-                message:
-                    "Ha ocurrido un error, por favor intentalo nuevamente.",
+                message: "El ID de la maquina es requerido.",
             });
         }
-    } else {
-        return res.status(403).json({
+    } catch (error) {
+        return res.status(400).json({
             status: false,
-            message: "No tienes permisos para acceder a este recurso.",
+            message: "Ha ocurrido un error, por favor intentalo nuevamente.",
         });
     }
 };
@@ -96,7 +116,7 @@ machineMethods.createMachine = async (req, res) => {
             machineCode,
             name,
             totalHoursToMaintenance,
-            totalHoursWorking,
+            totalHoursRegisted,
         } = req.body;
         if (req.file) {
             if (
@@ -137,7 +157,8 @@ machineMethods.createMachine = async (req, res) => {
                         machineCode,
                         name,
                         totalHoursToMaintenance,
-                        totalHoursWorking,
+                        totalHoursWorking: totalHoursRegisted,
+                        totalHoursRegisted,
                     };
                     if (req.file) {
                         machineData.machinePhoto = {
@@ -211,9 +232,20 @@ machineMethods.createMachine = async (req, res) => {
 machineMethods.updateMachine = async (req, res) => {
     const permission = ac.can(req.user.rol.name).updateAny("machine");
     if (permission.granted) {
-        const { machineID, environmentID, machineCode, name } = req.body;
+        const {
+            machineID,
+            environmentID,
+            machineCode,
+            name,
+            totalHoursToMaintenance,
+        } = req.body;
         if (machineID) {
-            if (environmentID && machineCode && name) {
+            if (
+                environmentID &&
+                machineCode &&
+                name &&
+                totalHoursToMaintenance
+            ) {
                 const getMachine = await Machine.findById(machineID);
                 if (getMachine) {
                     try {
@@ -238,6 +270,7 @@ machineMethods.updateMachine = async (req, res) => {
                             environmentID,
                             machineCode,
                             name,
+                            totalHoursToMaintenance,
                         };
 
                         if (req.file) {
@@ -256,11 +289,13 @@ machineMethods.updateMachine = async (req, res) => {
                             };
                         }
 
-                        await getMachine.update(updatedMachine);
+                        await getMachine.updateOne(updatedMachine);
 
                         return res.status(200).json({
                             status: true,
-                            updatedMachine: await Machine.findById(machineID),
+                            updatedMachine: await Machine.findById(
+                                machineID
+                            ).populate("machineUses"),
                             message:
                                 "La maquina se ha actualizado correctamente.",
                         });
@@ -378,16 +413,112 @@ machineMethods.registerMachineUse = async (req, res) => {
         if (machineID) {
             try {
                 const machine = await Machine.findById(machineID);
-                if (hours && note) {
-                    return res.json(machine);
+                if (machine) {
+                    if (machine.status === "active") {
+                        if (hours && note) {
+                            const machineUse = new MachineUse({
+                                user: req.user._id,
+                                hours,
+                                note,
+                            });
+
+                            const newHoursTotalWorking =
+                                machine.totalHoursRegisted + hours;
+                            const newHoursWorking =
+                                machine.totalHoursWorking + hours;
+
+                            const dataToUpdate = {
+                                totalHoursRegisted: newHoursTotalWorking,
+                                totalHoursWorking: newHoursWorking,
+                                machineUses: [
+                                    ...machine.machineUses,
+                                    machineUse._id,
+                                ],
+                            };
+
+                            if (
+                                newHoursWorking >=
+                                machine.totalHoursToMaintenance
+                            ) {
+                                dataToUpdate.status = Object.keys(
+                                    maintenanceStatus
+                                ).find(
+                                    (key) =>
+                                        maintenanceStatus[key] ===
+                                        maintenanceStatus.needMaintenance
+                                );
+                            }
+
+                            if (await machineUse.save()) {
+                                if (await machine.updateOne(dataToUpdate)) {
+                                    if (dataToUpdate.status) {
+                                        const notification = new Notification({
+                                            message: `La maquina ${machine.machineCode}, ha sobrepasado las ${machine.totalHoursToMaintenance} horas para su mantenimiento.`,
+                                        });
+                                        if (await notification.save()) {
+                                            req.io.emit(
+                                                "notificationRecived",
+                                                notification
+                                            );
+                                        }
+                                    }
+                                    const machineRefresh = await Machine.findById(
+                                        machineID,
+                                        {
+                                            machineCode: true,
+                                            name: true,
+                                            status: true,
+                                            _id: true,
+                                            machinePhoto: true,
+                                        }
+                                    ).populate("machineUses");
+                                    return res.status(201).json({
+                                        state: true,
+                                        machine: machineRefresh,
+                                        status:
+                                            maintenanceStatus[
+                                                machineRefresh.status
+                                            ],
+                                        message:
+                                            "Se ha registrado correctamente el uso de la maquina.",
+                                    });
+                                } else {
+                                    await machineUse.remove();
+                                    return res.status(400).json({
+                                        status: false,
+                                        message:
+                                            "Ha ocurrido un error, por favor intentalo nuevemante.",
+                                    });
+                                }
+                            } else {
+                                return res.status(400).json({
+                                    status: false,
+                                    message:
+                                        "Ha ocurrido un error, por favor intentalo nuevemante.",
+                                });
+                            }
+                        } else {
+                            return res.status(200).json({
+                                status: false,
+                                message: "Todos los campos son requeridos.",
+                            });
+                        }
+                    } else {
+                        return res.status(200).json({
+                            status: false,
+                            message: `Esta maquina se encuentra en estado ${
+                                maintenanceStatus[machine.status]
+                            } y por ende no esta disponible, si es un fallo reportalo con el administrador.`,
+                        });
+                    }
                 } else {
-                    return res.status(200).json({
+                    return res.status(404).json({
                         status: false,
-                        message: "Todos los campos son requeridos.",
+                        message: "No se ha encontrado el recurso solicitado.",
                     });
                 }
             } catch (error) {
-                return res.status(405).json({
+                return res.status(400).json({
                     status: false,
                     message:
                         "Ha ocurrido un error, por favor intentalo nuevamente.",
@@ -402,7 +533,7 @@ machineMethods.registerMachineUse = async (req, res) => {
     } else {
         return res.status(403).json({
             status: false,
-            message: "No tienes permisos para acceder a este recurso",
+            message: "No tienes permisos para acceder a este recurso.",
         });
     }
 };

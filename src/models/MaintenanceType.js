@@ -1,10 +1,6 @@
 const { Schema, model } = require("mongoose");
 
-const maintenaceSchema = new Schema({
-    maintenaceType: {
-        type: String,
-        required: true,
-    },
+const maintenanceTypeSchema = new Schema({
     name: {
         type: String,
         required: true,
@@ -15,4 +11,4 @@ const maintenaceSchema = new Schema({
     },
 });
 
-module.exports = model("Maintenace", maintenaceSchema);
+module.exports = model("MaintenanceType", maintenanceTypeSchema);

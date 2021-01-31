@@ -1,7 +1,7 @@
 const { Schema, model } = require("mongoose");
 
-const maintenaceTypeSchema = new Schema({
-    name: {
+const notificationSchema = new Schema({
+    message: {
         type: String,
         required: true,
     },
@@ -11,4 +11,4 @@ const maintenaceTypeSchema = new Schema({
     },
 });
 
-module.exports = model("MaintenaceType", maintenaceTypeSchema);
+module.exports = model("Notification", notificationSchema);
