@@ -1,15 +1,21 @@
-const { Schema, model } = require("mongoose");
+const { Schema, model, Types } = require("mongoose");
 
 const sparePartSchema = new Schema({
     sparePartPhoto: {
-        type: String,
+        type: Object,
         required: true,
     },
     sparePartCode: {
         type: String,
         required: true,
     },
-    machines: [Object],
+    machines: [
+        {
+            type: Object,
+            ref: "Machine",
+            field: "_id"
+        },
+    ],
     price: {
         type: Number,
         default: 0,

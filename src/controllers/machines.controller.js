@@ -1,10 +1,10 @@
 const machineMethods = {};
 const Machine = require("../models/Machine");
+const SparePart = require("../models/SparePart");
 const MachineUse = require("../models/MachineUse");
 const Environment = require("../models/Environment");
 const Notification = require("../models/Notification");
 const ac = require("../middlewares/accessControl");
-const mongoose = require("mongoose");
 const fs = require("fs");
 const { maintenanceStatus } = require("../config/config");
 
@@ -40,9 +40,35 @@ machineMethods.getMachines = async (req, res) => {
                     })
             ).reverse();
 
+            let newMachinesFind = [];
+            for (let m = 0; m < machines.length; m++) {
+                let actualMachine = machines[m];
+                let actualMachineSpareParts = [];
+
+                for (let i = 0; i < machines[m].spareParts.length; i++) {
+                    const getSparePart = await SparePart.findById(
+                        machines[m].spareParts[i]._id,
+                        {
+                            _id: true,
+                            name: true,
+                            price: true,
+                            create_at: true
+                        }
+                    );
+
+                    actualMachineSpareParts.push({
+                        sparePart: getSparePart,
+                        stockUsed: machines[m].spareParts[i].stockUsed,
+                    });
+                }
+
+                actualMachine.spareParts = actualMachineSpareParts;
+                newMachinesFind.push(actualMachine);
+            }
+
             return res.status(200).json({
                 status: true,
-                machines,
+                machines: newMachinesFind,
                 message: "Se han encontrado maquinaría",
             });
         } catch (error) {
@@ -163,13 +189,16 @@ machineMethods.createMachine = async (req, res) => {
                     if (req.file) {
                         machineData.machinePhoto = {
                             filename: req.file.filename,
-                            folder: "/img/machines/",
+                            folder: "img/machines/",
                         };
                     }
 
                     const machine = new Machine(machineData);
 
                     if (await machine.save()) {
+                        req.io.emit("newMachineSaved", {
+                            machines: machine,
+                        });
                         return res.status(201).json({
                             status: true,
                             machines: machine,
@@ -362,11 +391,12 @@ machineMethods.deleteMachine = async (req, res) => {
         const { machineID } = req.body;
         try {
             const getMachine = await Machine.findById(machineID);
+            console.log(getMachine);
             if (getMachine) {
                 if (getMachine.machinePhoto.filename) {
                     fs.unlinkSync(
                         __dirname +
-                            "/../../public" +
+                            "/../../public/" +
                             getMachine.machinePhoto.folder +
                             getMachine.machinePhoto.filename
                     );

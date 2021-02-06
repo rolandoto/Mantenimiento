@@ -36,7 +36,13 @@ const machineSchema = new Schema({
         type: Number,
         default: 0,
     },
-    spareParts: [Object],
+    spareParts: [
+        {
+            type: Object,
+            field: '_id',
+            ref: "SparePart",
+        },
+    ],
     machineUses: [
         {
             type: Types.ObjectId,
