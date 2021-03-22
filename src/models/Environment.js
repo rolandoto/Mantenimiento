@@ -13,6 +13,7 @@ const environmentSchema = new Schema({
         type: String,
         required: true,
     },
+    in_charge: String,
     create_at: {
         type: Date,
         default: new Date(),

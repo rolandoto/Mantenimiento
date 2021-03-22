@@ -8,6 +8,10 @@ const machineSchema = new Schema({
             (key) => maintenanceStatus[key] === maintenanceStatus.active
         ),
     },
+    machineType: {
+        type: Types.ObjectId,
+        ref: "MachineType",
+    },
     environmentID: {
         type: String,
         required: true,
@@ -39,7 +43,7 @@ const machineSchema = new Schema({
     spareParts: [
         {
             type: Object,
-            field: '_id',
+            field: "_id",
             ref: "SparePart",
         },
     ],
@@ -49,12 +53,51 @@ const machineSchema = new Schema({
             ref: "MachineUse",
         },
     ],
+    machineAlerts: [
+        {
+            name: String,
+            note: String,
+            date: new Date(),
+        }
+    ],
     maintenances: [
         {
             type: Types.ObjectId,
             ref: "Maintenance",
         },
     ],
+    preconfiguredMaitenances: [
+        {
+            hours: Number,
+            type: Types.ObjectId,
+            ref: "Maintenance"
+        },
+    ],
+    model: String,
+    adquisiton_year: String,
+    security_rules: [
+        {
+            description: string,
+        },
+    ],
+    enableSpareParts: [
+        {
+            type: Types.ObjectId,
+            ref: "SparePart",
+        },
+    ],
+    usedSpareParts: [
+        {
+            type: Types.ObjectId,
+            ref: "SparePart",
+            used: Number,
+            date_used: new Date(),
+        },
+    ],
+    power: String,
+    stream: String,
+    wats: String,
+    voltage: String,
     create_at: {
         type: Date,
         default: new Date(),

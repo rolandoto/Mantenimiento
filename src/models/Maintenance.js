@@ -13,6 +13,7 @@ const maintenanceSchema = new Schema({
         type: Boolean,
         default: false,
     },
+    check_list: Array,
     complete_at: Date,
     create_at: {
         type: Date,
