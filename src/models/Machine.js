@@ -36,17 +36,6 @@ const machineSchema = new Schema({
         type: Number,
         default: 0,
     },
-    totalHoursToMaintenance: {
-        type: Number,
-        default: 0,
-    },
-    spareParts: [
-        {
-            type: Object,
-            field: "_id",
-            ref: "SparePart",
-        },
-    ],
     machineUses: [
         {
             type: Types.ObjectId,
@@ -57,29 +46,43 @@ const machineSchema = new Schema({
         {
             name: String,
             note: String,
-            date: new Date(),
-        }
+            date: Date,
+        },
     ],
     maintenances: [
         {
-            type: Types.ObjectId,
-            ref: "Maintenance",
+            check_list: Array,
+            complete: {
+                type: Boolean,
+                default: false
+            },
+            complete_at: {
+                type: Date,
+                default: null
+            },
+            name: String,
+            create_at: {
+                type: Date,
+                default: new Date()
+            },
+            maintenanceType: {
+                type: Types.ObjectId,
+                ref: "MachineType",
+            },
         },
     ],
     preconfiguredMaitenances: [
         {
             hours: Number,
-            type: Types.ObjectId,
-            ref: "Maintenance"
+            maintenance: {
+                type: Types.ObjectId,
+                ref: "Maintenance",
+            },
         },
     ],
     model: String,
     adquisiton_year: String,
-    security_rules: [
-        {
-            description: string,
-        },
-    ],
+    security_rules: Array,
     enableSpareParts: [
         {
             type: Types.ObjectId,
@@ -91,12 +94,12 @@ const machineSchema = new Schema({
             type: Types.ObjectId,
             ref: "SparePart",
             used: Number,
-            date_used: new Date(),
+            date_used: Date,
         },
     ],
-    power: String,
+    brand: String,
     stream: String,
-    wats: String,
+    watts: String,
     voltage: String,
     create_at: {
         type: Date,

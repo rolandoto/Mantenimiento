@@ -1,8 +1,10 @@
 const machineMethods = {};
 const Machine = require("../models/Machine");
+const Maintenance = require("../models/Maintenance");
 const SparePart = require("../models/SparePart");
 const MachineUse = require("../models/MachineUse");
 const Environment = require("../models/Environment");
+const MachineType = require("../models/MachineType");
 const Notification = require("../models/Notification");
 const ac = require("../middlewares/accessControl");
 const fs = require("fs");
@@ -41,29 +43,36 @@ machineMethods.getMachines = async (req, res) => {
             ).reverse();
 
             let newMachinesFind = [];
-            for (let m = 0; m < machines.length; m++) {
-                let actualMachine = machines[m];
-                let actualMachineSpareParts = [];
+            if (machines) {
+                for (let m = 0; m < machines.length; m++) {
+                    let actualMachine = machines[m];
+                    let actualMachineSpareParts = [];
 
-                for (let i = 0; i < machines[m].spareParts.length; i++) {
-                    const getSparePart = await SparePart.findById(
-                        machines[m].spareParts[i]._id,
-                        {
-                            _id: true,
-                            name: true,
-                            price: true,
-                            create_at: true
-                        }
-                    );
+                    for (
+                        let i = 0;
+                        i < machines[m].enableSpareParts.length;
+                        i++
+                    ) {
+                        const getSparePart = await SparePart.findById(
+                            machines[m].spareParts[i]._id,
+                            {
+                                _id: true,
+                                name: true,
+                                price: true,
+                                create_at: true,
+                            }
+                        );
 
-                    actualMachineSpareParts.push({
-                        sparePart: getSparePart,
-                        stockUsed: machines[m].spareParts[i].stockUsed,
-                    });
+                        actualMachineSpareParts.push({
+                            sparePart: getSparePart,
+                            stockUsed: machines[m].spareParts[i].stockUsed,
+                        });
+                    }
+
+                    actualMachine.enableSpareParts = actualMachineSpareParts;
+                    newMachinesFind.push(actualMachine);
                 }
-
-                actualMachine.spareParts = actualMachineSpareParts;
-                newMachinesFind.push(actualMachine);
+            } else {
             }
 
             return res.status(200).json({
@@ -72,6 +81,7 @@ machineMethods.getMachines = async (req, res) => {
                 message: "Se han encontrado maquinaría",
             });
         } catch (error) {
+            console.error(error);
             return res.status(400).json({
                 status: false,
                 message: "Ha ocurrido un error, intentalo nuevamente.",
@@ -127,7 +137,7 @@ machineMethods.getMachineNoAuth = async (req, res) => {
 
 /**
  * Author: Juan Araque
- * Last modified: 24/01/2021
+ * Last modified: 22/03/2021
  *
  * @param {*} req
  * @param {*} res
@@ -140,16 +150,28 @@ machineMethods.createMachine = async (req, res) => {
         const {
             environmentID,
             machineCode,
+            machineType,
             name,
-            totalHoursToMaintenance,
             totalHoursRegisted,
+            model,
+            adquisiton_year,
+            brand,
+            stream,
+            watts,
+            voltage,
         } = req.body;
         if (req.file) {
             if (
                 environmentID &&
                 machineCode &&
                 name &&
-                totalHoursToMaintenance
+                model &&
+                adquisiton_year &&
+                brand &&
+                stream &&
+                watts &&
+                voltage &&
+                machineType
             ) {
                 try {
                     const environmnet = await Environment.findById(
@@ -162,6 +184,19 @@ machineMethods.createMachine = async (req, res) => {
                         return res.status(200).json({
                             status: false,
                             message: "El código del ambiente es incorrecto.",
+                        });
+                    }
+
+                    const machineTypeVerify = await MachineType.findById(
+                        machineType
+                    );
+                    if (!machineTypeVerify) {
+                        if (req.file) {
+                            fs.unlinkSync(req.file.path);
+                        }
+                        return res.status(200).json({
+                            status: false,
+                            message: "El tipo de maquina es incorrecto.",
                         });
                     }
 
@@ -180,12 +215,19 @@ machineMethods.createMachine = async (req, res) => {
 
                     const machineData = {
                         environmentID,
+                        machineType,
                         machineCode,
                         name,
-                        totalHoursToMaintenance,
                         totalHoursWorking: totalHoursRegisted,
                         totalHoursRegisted,
+                        model,
+                        adquisiton_year,
+                        brand,
+                        stream,
+                        watts,
+                        voltage,
                     };
+
                     if (req.file) {
                         machineData.machinePhoto = {
                             filename: req.file.filename,
@@ -215,6 +257,7 @@ machineMethods.createMachine = async (req, res) => {
                         });
                     }
                 } catch (error) {
+                    console.log(error);
                     if (req.file) {
                         fs.unlinkSync(req.file.path);
                     }
@@ -251,7 +294,7 @@ machineMethods.createMachine = async (req, res) => {
 
 /**
  * Author: Juan Araque
- * Last modified: 24/01/2021
+ * Last modified: 22/03/2021
  *
  * @param {*} req
  * @param {*} res
@@ -263,17 +306,29 @@ machineMethods.updateMachine = async (req, res) => {
     if (permission.granted) {
         const {
             machineID,
+            machineType,
             environmentID,
             machineCode,
             name,
-            totalHoursToMaintenance,
+            model,
+            adquisiton_year,
+            brand,
+            stream,
+            watts,
+            voltage,
         } = req.body;
         if (machineID) {
             if (
                 environmentID &&
                 machineCode &&
                 name &&
-                totalHoursToMaintenance
+                model &&
+                adquisiton_year &&
+                brand &&
+                stream &&
+                watts &&
+                voltage &&
+                machineType
             ) {
                 const getMachine = await Machine.findById(machineID);
                 if (getMachine) {
@@ -295,21 +350,42 @@ machineMethods.updateMachine = async (req, res) => {
                             });
                         }
 
+                        const machineTypeVerify = await MachineType.findById(
+                            machineType
+                        );
+                        if (!machineTypeVerify) {
+                            if (req.file) {
+                                fs.unlinkSync(req.file.path);
+                            }
+                            return res.status(200).json({
+                                status: false,
+                                message: "El tipo de maquina es incorrecto.",
+                            });
+                        }
+
                         const updatedMachine = {
                             environmentID,
+                            machineType,
                             machineCode,
                             name,
-                            totalHoursToMaintenance,
+                            model,
+                            adquisiton_year,
+                            brand,
+                            stream,
+                            watts,
+                            voltage,
                         };
 
                         if (req.file) {
                             if (getMachine.machinePhoto.filename) {
-                                fs.unlinkSync(
+                                const route =
                                     __dirname +
-                                        "/../../public" +
-                                        getMachine.machinePhoto.folder +
-                                        getMachine.machinePhoto.filename
-                                );
+                                    "/../../public/" +
+                                    getMachine.machinePhoto.folder +
+                                    getMachine.machinePhoto.filename;
+                                if (await fs.existsSync(route)) {
+                                    fs.unlinkSync(route);
+                                }
                             }
 
                             updatedMachine.machinePhoto = {
@@ -329,6 +405,7 @@ machineMethods.updateMachine = async (req, res) => {
                                 "La maquina se ha actualizado correctamente.",
                         });
                     } catch (error) {
+                        console.log(error);
                         if (req.file) {
                             fs.unlinkSync(req.file.path);
                         }
@@ -466,17 +543,53 @@ machineMethods.registerMachineUse = async (req, res) => {
                                 ],
                             };
 
-                            if (
-                                newHoursWorking >=
-                                machine.totalHoursToMaintenance
-                            ) {
-                                dataToUpdate.status = Object.keys(
-                                    maintenanceStatus
-                                ).find(
-                                    (key) =>
-                                        maintenanceStatus[key] ===
-                                        maintenanceStatus.needMaintenance
-                                );
+                            if (machine.preconfiguredMaitenances) {
+                                let newMaitenances = [];
+                                for (let preconfiguredMaitenance of machine.preconfiguredMaitenances) {
+                                    console.log(preconfiguredMaitenance.hours);
+                                    if (
+                                        newHoursWorking >=
+                                            preconfiguredMaitenance.hours &&
+                                        machine.totalHoursWorking <=
+                                            preconfiguredMaitenance.hours
+                                    ) {
+                                        const getMaitenance = await Maintenance.findById(
+                                            preconfiguredMaitenance.maintenance
+                                        ).populate("maintenanceType");
+                                        if (getMaitenance) {
+                                            newMaitenances.push({
+                                                name:
+                                                    getMaitenance
+                                                        .maintenanceType.name +
+                                                    " - " +
+                                                    getMaitenance.name,
+                                                check_list:
+                                                    getMaitenance.check_list,
+                                                maintenanceType:
+                                                    getMaitenance
+                                                        .maintenanceType._id,
+                                            });
+                                            dataToUpdate.status = Object.keys(
+                                                maintenanceStatus
+                                            ).find(
+                                                (key) =>
+                                                    maintenanceStatus[key] ===
+                                                    maintenanceStatus.needMaintenance
+                                            );
+                                        } else {
+                                            return res.status(400).json({
+                                                status: false,
+                                                message:
+                                                    "No se ha encontrado el mantenimiento preconfigurado.",
+                                            });
+                                        }
+                                    }
+                                }
+
+                                dataToUpdate.maintenances = [
+                                    ...machine.maintenances,
+                                    ...newMaitenances,
+                                ];
                             }
 
                             if (await machineUse.save()) {
@@ -552,6 +665,185 @@ machineMethods.registerMachineUse = async (req, res) => {
                     status: false,
                     message:
                         "Ha ocurrido un error, por favor intentalo nuevamente.",
+                });
+            }
+        } else {
+            return res.status(200).json({
+                status: false,
+                message: "El ID de la maquina es requerido.",
+            });
+        }
+    } else {
+        return res.status(403).json({
+            status: false,
+            message: "No tienes permisos para acceder a este recurso.",
+        });
+    }
+};
+
+/**
+ * Author: Juan Araque
+ * Last modified: 24/03/2021
+ *
+ * @param {*} req
+ * @param {*} res
+ *
+ * @return Object
+ */
+machineMethods.updatePreconfiguredMaitenances = async (req, res) => {
+    const permission = ac.can(req.user.rol.name).updateAny("machine");
+    if (permission.granted) {
+        const { machineID, preconfiguredMaitenances } = req.body;
+        if (machineID) {
+            if (preconfiguredMaitenances) {
+                try {
+                    const machine = await Machine.findById(machineID);
+                    if (machine) {
+                        preconfiguredMaitenances.forEach(
+                            async (maintenance) => {
+                                const findMaitenance = await Maintenance.findById(
+                                    maintenance.maintenance
+                                );
+                                if (!findMaitenance) {
+                                    return res.status(200).json({
+                                        status: false,
+                                        message:
+                                            "No se ha encontrado el mantenimiento seleccionado.",
+                                    });
+                                }
+                            }
+                        );
+                        if (
+                            await machine.updateOne({
+                                preconfiguredMaitenances,
+                            })
+                        ) {
+                            return res.status(200).json({
+                                status: true,
+                                updatedMachine: await Machine.findById(
+                                    machineID
+                                ),
+                                message: "Mantenimientos actualizados",
+                            });
+                        } else {
+                            return res.status(200).json({
+                                status: false,
+                                message:
+                                    "Ha ocurrido un error, intentalo nuevamente.",
+                            });
+                        }
+                    } else {
+                        return res.status(200).json({
+                            status: false,
+                            message:
+                                "No se ha encontrado el recurso solicitado.",
+                        });
+                    }
+                } catch (error) {
+                    return res.status(200).json({
+                        status: false,
+                        message: "Ha ocurrido un error, intentalo nuevamente.",
+                    });
+                }
+            } else {
+                return res.status(200).json({
+                    status: false,
+                    message: "Debes llenar los campos requeridos.",
+                });
+            }
+        } else {
+            return res.status(200).json({
+                status: false,
+                message: "El ID de la maquina es requerido.",
+            });
+        }
+    } else {
+        return res.status(403).json({
+            status: false,
+            message: "No tienes permisos para acceder a este recurso.",
+        });
+    }
+};
+
+/**
+ * Author: Juan Araque
+ * Last modified: 30/03/2021
+ *
+ * @param {*} req
+ * @param {*} res
+ *
+ * @return Object
+ */
+machineMethods.completeCheckListTask = async (req, res) => {
+    const permission = ac.can(req.user.rol.name).updateAny("machine");
+    if (permission.granted) {
+        const { completed, machineID, maintenanceID, taskID } = req.body;
+        if (machineID) {
+            try {
+                const getMachine = await Machine.findById(machineID);
+                if (getMachine) {
+                    if (taskID) {
+                        const getMachineMaintenance = getMachine.maintenances.find(
+                            (maintenance) => {
+                                return (
+                                    maintenance._id.toString() ===
+                                    maintenanceID.toString()
+                                );
+                            }
+                        );
+                        if (getMachineMaintenance) {
+                            const completeMaintenanceTask = getMachine.maintenances.map(
+                                (maintenance) => {
+                                    if (maintenance._id === maintenanceID) {
+                                        maintenance.check_list = maintenance.check_list.map(
+                                            (task) => {
+                                                if (task.id === taskID) {
+                                                    task.complete = completed;
+                                                }
+                                                return task;
+                                            }
+                                        );
+                                    }
+                                    return maintenance;
+                                }
+                            );
+                            await getMachine.updateOne({
+                                maintenances: completeMaintenanceTask,
+                            });
+
+                            return res.status(200).json({
+                                status: true,
+                                data: {
+                                    machineID,
+                                    maintenanceID,
+                                    taskID,
+                                },
+                                message:
+                                    "La tarea ha sido completado correctamente",
+                            });
+                        } else {
+                            return res.status(200).json({
+                                status: false,
+                                message:
+                                    "No se ha encontrado el mantenimiento solicitado.",
+                            });
+                        }
+                    } else {
+                        return res.status(200).json({
+                            status: false,
+                            message: "El ID de la tarea es requerido.",
+                        });
+                    }
+                } else {
+                    return res.status(404).json({
+                        status: false,
+                        message: "No se ha encontrado el recurso solicitado.",
+                    });
+                }
+            } catch (error) {
+                return res.status(400).json({
+                    status: false,
+                    message: "Ha ocurrido un error, intentalo nuevamente.",
                 });
             }
         } else {

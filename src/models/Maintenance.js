@@ -5,13 +5,13 @@ const maintenanceSchema = new Schema({
         type: Types.ObjectId,
         ref: "MaintenanceType",
     },
-    machine: {
-        type: Types.ObjectId,
-        ref: "Machine",
-    },
     complete: {
         type: Boolean,
         default: false,
+    },
+    name: {
+        type: String,
+        required: true
     },
     check_list: Array,
     complete_at: Date,

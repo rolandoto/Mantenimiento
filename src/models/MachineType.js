@@ -1,8 +1,8 @@
-import { model, Schema } from "mongoose";
+const { model, Schema } = require("mongoose");
 
 const machineTypeSchema = new Schema({
     machine_type_name: {
-        type: string,
+        type: String,
         required: true,
     },
     create_at: {

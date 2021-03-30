@@ -102,8 +102,8 @@ environmentMethods.createEnvironment = async (req, res) => {
     const permission = ac.can(req.user.rol.name).createAny("environment");
     if (permission.granted) {
         if (req.file) {
-            const { environmentCode, name } = req.body;
-            if (environmentCode && name) {
+            const { environmentCode, name, in_charge } = req.body;
+            if (environmentCode && name && in_charge) {
                 try {
                     const compare = await Environment.findOne({
                         environmentCode,
@@ -126,6 +126,7 @@ environmentMethods.createEnvironment = async (req, res) => {
                         },
                         environmentCode,
                         name,
+                        in_charge,
                     });
 
                     if (await environment.save()) {
@@ -192,8 +193,8 @@ environmentMethods.createEnvironment = async (req, res) => {
 environmentMethods.updateEnvironment = async (req, res) => {
     const permission = ac.can(req.user.rol.name).updateAny("environment");
     if (permission.granted) {
-        const { environmentID, environmentCode, name } = req.body;
-        if ((environmentCode, name)) {
+        const { environmentID, environmentCode, name, in_charge } = req.body;
+        if (environmentCode && name && in_charge) {
             const compare = await Environment.findById(environmentID);
             if (compare) {
                 if (compare.environmentCode !== environmentCode) {
@@ -216,6 +217,7 @@ environmentMethods.updateEnvironment = async (req, res) => {
                     const updatedEnvironment = {
                         environmentCode,
                         name,
+                        in_charge,
                     };
 
                     if (req.file) {

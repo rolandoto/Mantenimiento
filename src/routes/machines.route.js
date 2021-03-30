@@ -7,6 +7,8 @@ const {
     updateMachine,
     deleteMachine,
     registerMachineUse,
+    updatePreconfiguredMaitenances,
+    completeCheckListTask,
 } = require("../controllers/machines.controller");
 const authMiddleware = require("../middlewares/authMiddleware");
 const upload = require("../middlewares/uploadMiddleware");
@@ -27,6 +29,12 @@ router
         upload("machines").single("machinePhoto"),
         updateMachine
     )
+    .put(
+        "/updatePreconfiguredMaitenances",
+        authMiddleware,
+        updatePreconfiguredMaitenances
+    )
+    .put("/completeTask", authMiddleware, completeCheckListTask)
     .delete("/deleteMachine", authMiddleware, deleteMachine);
 
 module.exports = router;

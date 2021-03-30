@@ -62,5 +62,6 @@ app.use("/machine", require("./routes/machines.route"));
 app.use("/sparePart", require("./routes/spareParts.route"));
 app.use("/rol", require("./routes/rol.route"));
 app.use("/notification", require("./routes/notification.route"));
+app.use("/machineType", require("./routes/machineTypes.route"));
 
 module.exports = server;

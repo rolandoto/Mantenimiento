@@ -1,4 +1,5 @@
 const maintenancesMethods = {};
+const { Types } = require("mongoose");
 const Maintenance = require("../models/Maintenance");
 const Machine = require("../models/Machine");
 const MaintenanceType = require("../models/MaintenanceType");
@@ -7,7 +8,7 @@ const { maintenanceStatus } = require("../config/config");
 
 /**
  * Author: Juan Araque
- * Last modified: 30/01/2021
+ * Last modified: 28/03/2021
  *
  * @param {*} req
  * @param {*} res
@@ -19,9 +20,7 @@ maintenancesMethods.getMaintenances = async (req, res) => {
     if (permission.granted) {
         try {
             const maintenances = await (
-                await Maintenance.find()
-                    .populate("machine")
-                    .populate("maintenanceType")
+                await Maintenance.find().populate("maintenanceType")
             ).reverse();
             return res.status(200).json({
                 status: true,
@@ -45,7 +44,7 @@ maintenancesMethods.getMaintenances = async (req, res) => {
 
 /**
  * Author: Juan Araque
- * Last modified: 30/01/2021
+ * Last modified: 28/03/2021
  *
  * @param {*} req
  * @param {*} res
@@ -58,9 +57,9 @@ maintenancesMethods.getMaintenance = async (req, res) => {
         try {
             const maintenanceID = req.params["id"];
             if (maintenanceID) {
-                const maintenance = await Maintenance.findById(maintenanceID)
-                    .populate("machine")
-                    .populate("maintenanceType");
+                const maintenance = await Maintenance.findById(
+                    maintenanceID
+                ).populate("maintenanceType");
                 if (maintenance) {
                     return res.status(200).json({
                         status: true,
@@ -94,9 +93,18 @@ maintenancesMethods.getMaintenance = async (req, res) => {
     }
 };
 
+function createTask(name) {
+    return {
+        id: Types.ObjectId(),
+        name,
+        complete: false,
+        complete_at: null,
+    };
+}
+
 /**
  * Author: Juan Araque
- * Last modified: 30/01/2021
+ * Last modified: 22/03/2021
  *
  * @param {*} req
  * @param {*} res
@@ -106,101 +114,49 @@ maintenancesMethods.getMaintenance = async (req, res) => {
 maintenancesMethods.createMaintenance = async (req, res) => {
     const permission = ac.can(req.user.rol.name).createAny("maintenance");
     if (permission.granted) {
-        const { maintenanceType, machine } = req.body;
-        if (maintenanceType && machine) {
+        const { maintenanceType, name, check_list = [] } = req.body;
+        if (maintenanceType && name && check_list) {
             try {
                 const getMaintenanceType = await MaintenanceType.findById(
                     maintenanceType
                 );
                 if (getMaintenanceType) {
-                    const getMachine = await Machine.findById(machine);
-                    if (getMachine) {
-                        if (
-                            getMachine.status ==
-                                Object.keys(maintenanceStatus).find(
-                                    (key) =>
-                                        maintenanceStatus[key] ===
-                                        maintenanceStatus.active
-                                ) ||
-                            getMachine.status ==
-                                Object.keys(maintenanceStatus).find(
-                                    (key) =>
-                                        maintenanceStatus[key] ===
-                                        maintenanceStatus.needMaintenance
-                                )
-                        ) {
-                            const maintenance = new Maintenance({
-                                maintenanceType,
-                                machine,
-                            });
+                    const maitenance = new Maintenance({
+                        maintenanceType,
+                        name,
+                        check_list,
+                    });
 
-                            if (
-                                await getMachine.updateOne({
-                                    status: Object.keys(maintenanceStatus).find(
-                                        (key) =>
-                                            maintenanceStatus[key] ===
-                                            maintenanceStatus.maintenance
-                                    ),
-                                    maintenances: [
-                                        ...getMachine.maintenances,
-                                        maintenance._id,
-                                    ],
-                                })
-                            ) {
-                                if (await maintenance.save()) {
-                                    return res.status(201).json({
-                                        status: true,
-                                        maintenances: await Maintenance.findById(
-                                            maintenance._id
-                                        )
-                                            .populate("machine")
-                                            .populate("maintenanceType"),
-                                        message:
-                                            "El mantenimeinto se ha creado correctamente.",
-                                    });
-                                } else {
-                                    await getMachine.updateOne({
-                                        status: getMachine.status,
-                                    });
-                                    return res.status(400).json({
-                                        status: false,
-                                        message:
-                                            "Ha ocurrido un error, por favor intentalo nuevamente.",
-                                    });
-                                }
-                            } else {
-                                return res.status(400).json({
-                                    status: false,
-                                    message:
-                                        "Ha ocurrido un error, por favor intentalo nuevamente.",
-                                });
-                            }
-                        } else {
-                            return res.status(200).json({
-                                status: false,
-                                message: `Esta maquina no se puede poner en mantenimiento ya que se encuentra en estado: ${
-                                    maintenanceStatus[getMachine.status]
-                                }.`,
-                            });
-                        }
+                    maitenance.check_list = check_list.map((task) => {
+                        return createTask(task.name);
+                    });
+                    if (await maitenance.save()) {
+                        return res.status(201).json({
+                            status: true,
+                            maintenances: await Maintenance.findById(
+                                maitenance._id
+                            ).populate("maintenanceType"),
+                            message:
+                                "El mantenimineto se ha creado correctamente.",
+                        });
                     } else {
                         return res.status(200).json({
                             status: false,
-                            message: "No se ha encontrado la maquina.",
+                            message:
+                                "Ha ocurrido un error, intentalo nuevamente.",
                         });
                     }
                 } else {
                     return res.status(200).json({
                         status: false,
                         message:
-                            "No se ha encontrado el tipo de mantenimineto.",
+                            "No se ha encontrado el tipo de mantenimiento.",
                     });
                 }
             } catch (error) {
-                return res.status(400).json({
+                return res.status(200).json({
                     status: false,
-                    message:
-                        "Ha ocurrido un error, por favor intentalo nuevamente.",
+                    message: "Ha ocurrido un error, intentalo nuevamente.",
                 });
             }
         } else {
@@ -219,7 +175,7 @@ maintenancesMethods.createMaintenance = async (req, res) => {
 
 /**
  * Author: Juan Araque
- * Last modified: 30/01/2021
+ * Last modified: 28/03/2021
  *
  * @param {*} req
  * @param {*} res
@@ -235,80 +191,25 @@ maintenancesMethods.completeMaintenance = async (req, res) => {
             if (getMaintenance) {
                 try {
                     if (!getMaintenance.complete) {
-                        const getMachine = await Machine.findById(
-                            getMaintenance.machine
-                        );
-                        if (getMachine) {
-                            if (
-                                getMachine.status ==
-                                Object.keys(maintenanceStatus).find(
-                                    (key) =>
-                                        maintenanceStatus[key] ===
-                                        maintenanceStatus.maintenance
-                                )
-                            ) {
-                                if (
-                                    await getMachine.updateOne({
-                                        status: Object.keys(
-                                            maintenanceStatus
-                                        ).find(
-                                            (key) =>
-                                                maintenanceStatus[key] ===
-                                                maintenanceStatus.active
-                                        ),
-                                        totalHoursWorking: 0,
-                                    })
-                                ) {
-                                    if (
-                                        await getMaintenance.updateOne({
-                                            complete: true,
-                                            complete_at: new Date(),
-                                        })
-                                    ) {
-                                        return res.status(200).json({
-                                            status: true,
-                                            maintenance: await Maintenance.findById(
-                                                maintenanceID
-                                            )
-                                                .populate("machine")
-                                                .populate("maintenanceType"),
-                                            message:
-                                                "El mantenimiento se ha completado correctamente.",
-                                        });
-                                    } else {
-                                        await getMachine.updateOne({
-                                            status: Object.keys(
-                                                maintenanceStatus
-                                            ).find(
-                                                (key) =>
-                                                    maintenanceStatus[key] ===
-                                                    maintenanceStatus.maintenance
-                                            ),
-                                        });
-                                        return res.status(400).json({
-                                            status: false,
-                                            message:
-                                                "Ha ocurrido un error, intentalo nuevamente.",
-                                        });
-                                    }
-                                } else {
-                                    return res.status(400).json({
-                                        status: false,
-                                        message:
-                                            "Ha ocurrido un error, intentalo nuevamente.",
-                                    });
-                                }
-                            } else {
-                                return res.status(200).json({
-                                    status: false,
-                                    message:
-                                        "La maquina relacionada no se encuentra en mantenimineto.",
-                                });
-                            }
-                        } else {
+                        if (
+                            await getMaintenance.updateOne({
+                                complete: true,
+                                complete_at: new Date(),
+                            })
+                        ) {
                             return res.status(200).json({
+                                status: true,
+                                maintenance: await Maintenance.findById(
+                                    maintenanceID
+                                ).populate("maintenanceType"),
+                                message:
+                                    "El mantenimiento se ha completado correctamente.",
+                            });
+                        } else {
+                            return res.status(400).json({
                                 status: false,
-                                message: "No se ha encontrado ma maquina.",
+                                message:
+                                    "Ha ocurrido un error, intentalo nuevamente.",
                             });
                         }
                     } else {
@@ -346,7 +247,115 @@ maintenancesMethods.completeMaintenance = async (req, res) => {
 
 /**
  * Author: Juan Araque
- * Last modified: 30/01/2021
+ * Last modified: 28/03/2021
+ *
+ * @param {*} req
+ * @param {*} res
+ *
+ * @return Object
+ */
+maintenancesMethods.updateMaintenance = async (req, res) => {
+    const permission = ac.can(req.user.rol.name).updateAny("maintenance");
+    if (permission.granted) {
+        const {
+            maintenanceID,
+            maintenanceType,
+            name,
+            check_list = [],
+        } = req.body;
+
+        if (maintenanceID) {
+            if (maintenanceType && name && check_list) {
+                try {
+                    const getMaitenance = await Maintenance.findById(
+                        maintenanceID
+                    );
+                    if (getMaitenance) {
+                        const getMaintenanceType = await MaintenanceType.findById(
+                            maintenanceType
+                        );
+                        if (getMaintenanceType) {
+                            const maitenance = {
+                                maintenanceType,
+                                name,
+                                check_list,
+                            };
+
+                            maitenance.check_list = check_list.map((task) => {
+                                return createTask(task.name);
+                            });
+
+                            if (await getMaitenance.updateOne(maitenance)) {
+                                return res.status(201).json({
+                                    status: true,
+                                    maintenances: await Maintenance.findById(
+                                        maintenanceID
+                                    ).populate("maintenanceType"),
+                                    message:
+                                        "El mantenimineto se ha actualizado correctamente.",
+                                });
+                            } else {
+                                return res.status(200).json({
+                                    status: false,
+                                    message:
+                                        "Ha ocurrido un error, intentalo nuevamente.",
+                                });
+                            }
+                        } else {
+                            return res.status(200).json({
+                                status: false,
+                                message:
+                                    "No se ha encontrado el tipo de mantenimiento.",
+                            });
+                        }
+                    } else {
+                        return res.status(200).json({
+                            status: false,
+                            message: "No se ha encontrado el  mantenimiento.",
+                        });
+                    }
+                } catch (error) {
+                    return res.status(200).json({
+                        status: false,
+                        message: "Ha ocurrido un error, intentalo nuevamente.",
+                    });
+                }
+            } else {
+                return res.status(200).json({
+                    status: false,
+                    message: "Debes llenar los campos requeridos.",
+                });
+            }
+        } else {
+            return res.status(200).json({
+                status: false,
+                message: "El ID del mantenimiento es requerido.",
+            });
+        }
+    } else {
+        return res.status(403).json({
+            status: false,
+            message: "No tienes permisos para acceder a este recurso.",
+        });
+    }
+};
+
+function evaluateMaitenances(machine, maitenanceID) {
+    let isUsed = false;
+
+    machine.preconfiguredMaitenances.forEach((maitenance) => {
+        if (maitenance.maintenance.toString() === maitenanceID) {
+            isUsed = true;
+            return false;
+        }
+    });
+
+    return isUsed;
+}
+
+/**
+ * Author: Juan Araque
+ * Last modified: 28/03/2021
  *
  * @param {*} req
  * @param {*} res
@@ -360,53 +369,37 @@ maintenancesMethods.deleteMaintenance = async (req, res) => {
         try {
             const getMaintenance = await Maintenance.findById(maintenanceID);
             if (getMaintenance) {
-                if (getMaintenance.complete) {
-                    const getMachine = await Machine.findById(
-                        getMaintenance.machine
-                    );
-                    if (getMachine) {
-                        const newMachineMaitenances = getMachine.maintenances.filter(
-                            (maitenance) => maitenance != maintenanceID
-                        );
+                const checkIfMachinesNotHasThisMaitenance = await Machine.find({
+                    preconfiguredMaitenances: { $exists: true, $ne: [] },
+                });
+
+                if (checkIfMachinesNotHasThisMaitenance) {
+                    for (let machine of checkIfMachinesNotHasThisMaitenance) {
                         if (
-                            await getMachine.updateOne({
-                                maintenances: newMachineMaitenances,
-                            })
+                            evaluateMaitenances(
+                                machine,
+                                getMaintenance._id.toString()
+                            )
                         ) {
-                            if (getMaintenance.remove()) {
-                                return res.status(201).json({
-                                    status: true,
-                                    message:
-                                        "El mantenimiento fue eliminado correctamente.",
-                                });
-                            } else {
-                                await getMachine.updateOne({
-                                    maintenances: getMachine.maintenances,
-                                });
-                                return res.status(400).json({
-                                    status: false,
-                                    message:
-                                        "Ha ocurrido un error, intentalo nuevamente.",
-                                });
-                            }
-                        } else {
                             return res.status(400).json({
                                 status: false,
                                 message:
-                                    "Ha ocurrido un error, intentalo nuevamente.",
+                                    "No puede eliminar el mantenimiento, hay maquinas usando este mantenimiento.",
                             });
                         }
-                    } else {
-                        return res.status(200).json({
-                            status: false,
-                            message: "No se ha encontrado la maquina.",
-                        });
                     }
-                } else {
-                    return res.status(200).json({
-                        status: false,
+                }
+
+                if (getMaintenance.remove()) {
+                    return res.status(201).json({
+                        status: true,
                         message:
-                            "No puedes eliminar este mantenimineto hasta que se haya completado, esto lo hacemos para evitar errores y que las maquinas queden en un estado indefinido.",
+                            "El mantenimiento fue eliminado correctamente.",
+                    });
+                } else {
+                    return res.status(400).json({
+                        status: false,
+                        message: "Ha ocurrido un error, intentalo nuevamente.",
                     });
                 }
             } else {
@@ -416,6 +409,7 @@ maintenancesMethods.deleteMaintenance = async (req, res) => {
                 });
             }
         } catch (error) {
+            console.log(error);
             return res.status(400).json({
                 status: false,
                 message: "Ha ocurrido un error, intentalo nuevamente.",

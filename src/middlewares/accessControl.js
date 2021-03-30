@@ -28,6 +28,12 @@ ac.grant("admin")
     .createAny("machine");
 
 ac.grant("admin")
+    .readAny("machineType")
+    .deleteAny("machineType")
+    .updateAny("machineType")
+    .createAny("machineType");
+
+ac.grant("admin")
     .readOwn("maintenanceType")
     .readAny("maintenanceType")
     .deleteAny("maintenanceType")
