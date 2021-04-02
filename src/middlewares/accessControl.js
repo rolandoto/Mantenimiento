@@ -6,7 +6,8 @@ ac.grant("user")
     .updateOwn("profile")
     .readAny("notification")
     .deleteAny("notification")
-    .createAny("machineUse");
+    .createAny("machineUse")
+    .createAny("machineIssue");
 
 ac.grant("admin")
     .extend("user")

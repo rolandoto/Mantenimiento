@@ -13,7 +13,6 @@ const sparePartSchema = new Schema({
         {
             type: Object,
             ref: "Machine",
-            field: "_id"
         },
     ],
     price: {

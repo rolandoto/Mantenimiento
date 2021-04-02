@@ -33,7 +33,7 @@ const authMiddleware = async (req, res, next) => {
     } catch (error) {
         return res.status(400).json({
             status: false,
-            message: "Ha ocurrido un error, por favor intentalo nuevamente.",
+            message: "El token es incorrecto.",
         });
     }
 };

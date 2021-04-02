@@ -42,7 +42,7 @@ const machineSchema = new Schema({
             ref: "MachineUse",
         },
     ],
-    machineAlerts: [
+    machineIssues: [
         {
             name: String,
             note: String,
@@ -54,16 +54,16 @@ const machineSchema = new Schema({
             check_list: Array,
             complete: {
                 type: Boolean,
-                default: false
+                default: false,
             },
             complete_at: {
                 type: Date,
-                default: null
+                default: null,
             },
             name: String,
             create_at: {
                 type: Date,
-                default: new Date()
+                default: new Date(),
             },
             maintenanceType: {
                 type: Types.ObjectId,
@@ -91,10 +91,12 @@ const machineSchema = new Schema({
     ],
     usedSpareParts: [
         {
-            type: Types.ObjectId,
-            ref: "SparePart",
-            used: Number,
-            date_used: Date,
+            id: Types.ObjectId,
+            price: Number,
+            sparePartCode: String,
+            name: String,
+            sparePartPhoto: {},
+            stockUsed: Number,
         },
     ],
     brand: String,

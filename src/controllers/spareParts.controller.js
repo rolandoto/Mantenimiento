@@ -343,17 +343,17 @@ sparePartsMethods.updateSparePart = async (req, res) => {
 
 /**
  * Author: Juan Araque
- * Last modified: 31/01/2021
+ * Last modified: 01/04/2021
  *
  * @param {*} req
  * @param {*} res
  *
  * @return Object
  */
-sparePartsMethods.assignSparePartToMachine = async (req, res) => {
+sparePartsMethods.assignSparePartToMachines = async (req, res) => {
     const permission = ac.can(req.user.rol.name).updateAny("sparePart").granted;
     if (permission) {
-        const { machineID, sparePartID, stock } = req.body;
+        const { sparePartID, machineID } = req.body;
         try {
             if (sparePartID) {
                 const sparePart = await SparePart.findById(sparePartID);
@@ -361,69 +361,191 @@ sparePartsMethods.assignSparePartToMachine = async (req, res) => {
                     if (machineID) {
                         const machine = await Machine.findById(machineID);
                         if (machine) {
-                            if (stock) {
-                                if (stock === 0) {
+                            const checkIfIsAssigned = sparePart.machines.some(
+                                (id) => id.toString() === machineID.toString()
+                            );
+
+                            let setMachinesSpareParts = [];
+                            let setMachines = [];
+                            let messageSuccess = "";
+                            if (checkIfIsAssigned) {
+                                setMachinesSpareParts = sparePart.machines.filter(
+                                    (machine) => {
+                                        return (
+                                            machine.toString() !==
+                                            machineID.toString()
+                                        );
+                                    }
+                                );
+                                setMachines = machine.enableSpareParts.filter(
+                                    (sparePart) => {
+                                        return (
+                                            sparePart.toString() !==
+                                            sparePartID.toString()
+                                        );
+                                    }
+                                );
+                                messageSuccess =
+                                    "Se ha removido la asignación de la pieza de repuesto correctamente.";
+                            } else {
+                                setMachinesSpareParts = [
+                                    ...sparePart.machines,
+                                    machineID,
+                                ];
+                                setMachines = [
+                                    ...machine.enableSpareParts,
+                                    sparePartID,
+                                ];
+                                messageSuccess =
+                                    "Se ha asignado la pieza de repuesto correctamente.";
+                            }
+
+                            if (
+                                await sparePart.updateOne({
+                                    machines: setMachinesSpareParts,
+                                })
+                            ) {
+                                if (
+                                    await machine.updateOne({
+                                        enableSpareParts: setMachines,
+                                    })
+                                ) {
                                     return res.status(200).json({
+                                        status: true,
+                                        sparePart: await SparePart.findById(
+                                            sparePartID
+                                        ),
+                                        message: messageSuccess,
+                                    });
+                                } else {
+                                    await sparePart.updateOne({
+                                        machines: sparePart.machines,
+                                    });
+                                    return res.status(400).json({
                                         status: false,
                                         message:
-                                            "Lo sentimos el numero de partes para su uso debe ser mayor a 0.",
+                                            "Ha ocurrido un error, por favor intentalo nuevamente.",
                                     });
                                 }
+                            } else {
+                                return res.status(400).json({
+                                    status: false,
+                                    message:
+                                        "Ha ocurrido un error, por favor intentalo nuevamente.",
+                                });
+                            }
+                        } else {
+                            return res.status(400).json({
+                                status: false,
+                                message: "El ID de la maquina es requerido.",
+                            });
+                        }
+                    } else {
+                        return res.status(200).json({
+                            status: false,
+                            message: "Las maquinas son requeridas.",
+                        });
+                    }
+                } else {
+                    return res.status(200).json({
+                        status: false,
+                        message: "No se ha encontrado el repuesto solicitado.",
+                    });
+                }
+            } else {
+                return res.status(200).json({
+                    status: false,
+                    message: "El ID de repuesto es requerido.",
+                });
+            }
+        } catch (error) {
+            return res.status(400).json({
+                status: false,
+                message:
+                    "Ha ocurrido un error, por favor intentalo nuevamente.",
+            });
+        }
+    } else {
+        return res.status(403).json({
+            status: false,
+            message: "No tienes permisos para acceder a este recurso",
+        });
+    }
+};
 
-                                if (sparePart.stock >= stock) {
-                                    const updateSparePart = {
-                                        machines: [
-                                            ...sparePart.machines,
-                                            {
-                                                _id: machineID,
-                                                stockUsed: stock,
-                                            },
-                                        ],
-                                        stock: sparePart.stock - stock,
-                                    };
-
-                                    const updateMachine = {
-                                        spareParts: [
-                                            ...machine.spareParts,
-                                            {
-                                                _id: sparePartID,
-                                                stockUsed: stock,
-                                            },
-                                        ],
-                                    };
-
+/**
+ * Author: Juan Araque
+ * Last modified: 01/04/2021
+ *
+ * @param {*} req
+ * @param {*} res
+ *
+ * @return Object
+ */
+sparePartsMethods.useSparePart = async (req, res) => {
+    const permission = ac.can(req.user.rol.name).updateAny("machine").granted;
+    if (permission) {
+        try {
+            const { sparePartID, machineID, stockUsed } = req.body;
+            if (sparePartID) {
+                const sparePart = await SparePart.findById(sparePartID);
+                if (sparePart) {
+                    const machine = await Machine.findById(machineID);
+                    if (machine) {
+                        if (stockUsed) {
+                            const checkIfStockIsValid =
+                                sparePart.stock - stockUsed;
+                            if (checkIfStockIsValid >= 0) {
+                                const copySparePart = {
+                                    id: Types.ObjectId(),
+                                    price: sparePart.price,
+                                    sparePartCode: sparePart.sparePartCode,
+                                    name: sparePart.name,
+                                    sparePartPhoto: sparePart.sparePartPhoto,
+                                    stockUsed,
+                                };
+                                if (
+                                    await sparePart.updateOne({
+                                        stock: checkIfStockIsValid,
+                                    })
+                                ) {
+                                    const setSpareParts = [
+                                        copySparePart,
+                                        ...machine.usedSpareParts,
+                                    ];
                                     if (
-                                        await sparePart.updateOne(
-                                            updateSparePart
-                                        )
+                                        await machine.updateOne({
+                                            usedSpareParts: setSpareParts,
+                                        })
                                     ) {
-                                        if (
-                                            await machine.updateOne(
-                                                updateMachine
+                                        return res.status(200).json({
+                                            status: true,
+                                            sparePart: await SparePart.findById(
+                                                sparePartID
+                                            ),
+                                            updatedMachine: await Machine.findById(
+                                                machineID
                                             )
-                                        ) {
-                                            return res.status(200).json({
-                                                status: true,
-                                                machine: await Machine.findById(
-                                                    machineID
-                                                ),
-                                                sparePart: await SparePart.findById(
-                                                    sparePartID
-                                                ),
-                                                message:
-                                                    "El repuesto se ha asignado correctamente.",
-                                            });
-                                        } else {
-                                            await sparePart.updateOne({
-                                                machines: sparePart.machines,
-                                                stock: sparePart.stock,
-                                            });
-                                            return res.status(400).json({
-                                                status: false,
-                                                message:
-                                                    "Ha ocurrido un error, por favor intentalo nuevamente.",
-                                            });
-                                        }
+                                                .populate({
+                                                    path: "machineUses",
+                                                    populate: {
+                                                        path: "user",
+                                                        model: "User",
+                                                        select: "name",
+                                                    },
+                                                })
+                                                .populate({
+                                                    path: "maintenances",
+                                                    populate: {
+                                                        path: "maintenanceType",
+                                                        model:
+                                                            "MaintenanceType",
+                                                    },
+                                                })
+                                                .populate("enableSpareParts"),
+                                            message:
+                                                "Se ha usado el repuesto correctamente.",
+                                        });
                                     } else {
                                         return res.status(400).json({
                                             status: false,
@@ -432,27 +554,28 @@ sparePartsMethods.assignSparePartToMachine = async (req, res) => {
                                         });
                                     }
                                 } else {
-                                    return res.status(200).json({
+                                    return res.status(400).json({
                                         status: false,
                                         message:
-                                            "Lo sentimos pero no hay suficiente stock en el inventario.",
+                                            "Ha ocurrido un error, por favor intentalo nuevamente.",
                                     });
                                 }
                             } else {
-                                return res.status(200).json({
+                                return res.status(400).json({
                                     status: false,
-                                    message: "Todos los campos son requeridos.",
+                                    message:
+                                        "Lo sentimos pero el stock maxímo de esta maquina es " +
+                                        sparePart.stock,
                                 });
                             }
                         } else {
-                            return res.status(200).json({
+                            return res.status(400).json({
                                 status: false,
-                                message:
-                                    "No se ha encontrado la maquina solicitada.",
+                                message: "El stock a usar es requerido.",
                             });
                         }
                     } else {
-                        return res.status(200).json({
+                        return res.status(400).json({
                             status: false,
                             message: "El ID de la maquina es requerido.",
                         });

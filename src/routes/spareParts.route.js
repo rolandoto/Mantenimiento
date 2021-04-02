@@ -7,7 +7,8 @@ const {
     createSparePart,
     updateSparePart,
     deleteSparePart,
-    assignSparePartToMachine,
+    assignSparePartToMachines,
+    useSparePart,
 } = require("../controllers/spareParts.controller");
 const authMiddleware = require("../middlewares/authMiddleware");
 const upload = require("../middlewares/uploadMiddleware");
@@ -27,7 +28,8 @@ router
         upload("spareParts").single("sparePartPhoto"),
         updateSparePart
     )
-    .put("/assignSparePartToMachine", authMiddleware, assignSparePartToMachine)
+    .put("/assingSpareParts", authMiddleware, assignSparePartToMachines)
+    .put("/useSparePart", authMiddleware, useSparePart)
     .delete("/deleteSparePart", authMiddleware, deleteSparePart);
 
 module.exports = router;

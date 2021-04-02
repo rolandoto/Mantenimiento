@@ -9,6 +9,8 @@ const {
     registerMachineUse,
     updatePreconfiguredMaitenances,
     completeCheckListTask,
+    resetMachineHours,
+    registerMachineIssue,
 } = require("../controllers/machines.controller");
 const authMiddleware = require("../middlewares/authMiddleware");
 const upload = require("../middlewares/uploadMiddleware");
@@ -17,6 +19,7 @@ router
     .get("/getMachines", authMiddleware, getMachines)
     .get("/getMachineNoAuth/:id", getMachineNoAuth)
     .post("/registerMachineUse", authMiddleware, registerMachineUse)
+    .post("/registerMachineIssue", authMiddleware, registerMachineIssue)
     .post(
         "/createMachine",
         authMiddleware,
@@ -35,6 +38,7 @@ router
         updatePreconfiguredMaitenances
     )
     .put("/completeTask", authMiddleware, completeCheckListTask)
+    .put("/resetMachineHours", authMiddleware, resetMachineHours)
     .delete("/deleteMachine", authMiddleware, deleteMachine);
 
 module.exports = router;

@@ -40,44 +40,12 @@ machineMethods.getMachines = async (req, res) => {
                             model: "MaintenanceType",
                         },
                     })
+                    .populate("enableSpareParts")
             ).reverse();
-
-            let newMachinesFind = [];
-            if (machines) {
-                for (let m = 0; m < machines.length; m++) {
-                    let actualMachine = machines[m];
-                    let actualMachineSpareParts = [];
-
-                    for (
-                        let i = 0;
-                        i < machines[m].enableSpareParts.length;
-                        i++
-                    ) {
-                        const getSparePart = await SparePart.findById(
-                            machines[m].spareParts[i]._id,
-                            {
-                                _id: true,
-                                name: true,
-                                price: true,
-                                create_at: true,
-                            }
-                        );
-
-                        actualMachineSpareParts.push({
-                            sparePart: getSparePart,
-                            stockUsed: machines[m].spareParts[i].stockUsed,
-                        });
-                    }
-
-                    actualMachine.enableSpareParts = actualMachineSpareParts;
-                    newMachinesFind.push(actualMachine);
-                }
-            } else {
-            }
 
             return res.status(200).json({
                 status: true,
-                machines: newMachinesFind,
+                machines,
                 message: "Se han encontrado maquinaría",
             });
         } catch (error) {
@@ -546,7 +514,6 @@ machineMethods.registerMachineUse = async (req, res) => {
                             if (machine.preconfiguredMaitenances) {
                                 let newMaitenances = [];
                                 for (let preconfiguredMaitenance of machine.preconfiguredMaitenances) {
-                                    console.log(preconfiguredMaitenance.hours);
                                     if (
                                         newHoursWorking >=
                                             preconfiguredMaitenance.hours &&
@@ -652,6 +619,83 @@ machineMethods.registerMachineUse = async (req, res) => {
                             message: `Esta maquina se encuentra en estado ${
                                 maintenanceStatus[machine.status]
                             } y por ende no esta disponible, si es un fallo reportalo con el administrador.`,
+                        });
+                    }
+                } else {
+                    return res.status(404).json({
+                        status: false,
+                        message: "No se ha encontrado el recurso solicitado.",
+                    });
+                }
+            } catch (error) {
+                return res.status(400).json({
+                    status: false,
+                    message:
+                        "Ha ocurrido un error, por favor intentalo nuevamente.",
+                });
+            }
+        } else {
+            return res.status(200).json({
+                status: false,
+                message: "El ID de la maquina es requerido.",
+            });
+        }
+    } else {
+        return res.status(403).json({
+            status: false,
+            message: "No tienes permisos para acceder a este recurso.",
+        });
+    }
+};
+
+/**
+ * Author: Juan Araque
+ * Last modified: 24/01/2021
+ *
+ * @param {*} req
+ * @param {*} res
+ *
+ * @return Object
+ */
+machineMethods.registerMachineIssue = async (req, res) => {
+    const permission = ac.can(req.user.rol.name).createAny("machineIssue")
+        .granted;
+    if (permission) {
+        const { machineID, issue } = req.body;
+        if (machineID) {
+            try {
+                const machine = await Machine.findById(machineID);
+                if (machine) {
+                    const machineIssues = [
+                        ...machine.machineIssues,
+                        {
+                            name: req.user.name,
+                            note: issue,
+                            date: new Date(),
+                        },
+                    ];
+                    if (issue) {
+                        if (
+                            await machine.updateOne({
+                                machineIssues,
+                            })
+                        ) {
+                            return res.status(201).json({
+                                status: true,
+                                message:
+                                    "Se ha registrado correctamente el reporte de la maquina.",
+                            });
+                        } else {
+                            return res.status(400).json({
+                                status: false,
+                                message:
+                                    "Ha ocurrido un error, por favor intentalo nuevemante.",
+                            });
+                        }
+                    } else {
+                        return res.status(200).json({
+                            status: false,
+                            message: "Todos los campos son requeridos.",
                         });
                     }
                 } else {
@@ -794,32 +838,74 @@ machineMethods.completeCheckListTask = async (req, res) => {
                         if (getMachineMaintenance) {
                             const completeMaintenanceTask = getMachine.maintenances.map(
                                 (maintenance) => {
-                                    if (maintenance._id === maintenanceID) {
+                                    if (
+                                        maintenance._id.toString() ===
+                                        maintenanceID.toString()
+                                    ) {
                                         maintenance.check_list = maintenance.check_list.map(
                                             (task) => {
-                                                if (task.id === taskID) {
+                                                if (
+                                                    task.id.toString() ===
+                                                    taskID.toString()
+                                                ) {
                                                     task.complete = completed;
+                                                    task.complete_at = new Date();
                                                 }
                                                 return task;
                                             }
                                         );
+
+                                        const checkIfMaintenanceComplete = maintenance.check_list.every(
+                                            (maintenance) => {
+                                                return (
+                                                    maintenance.complete ===
+                                                    true
+                                                );
+                                            }
+                                        );
+
+                                        if (checkIfMaintenanceComplete) {
+                                            maintenance.complete = true;
+                                            maintenance.complete_at = new Date();
+                                        }
                                     }
                                     return maintenance;
                                 }
                             );
-                            await getMachine.updateOne({
+
+                            const completeAll = completeMaintenanceTask.every(
+                                (maintenance) => {
+                                    return maintenance.complete === true;
+                                }
+                            );
+
+                            const dataToUpdate = {
                                 maintenances: completeMaintenanceTask,
-                            });
+                            };
+
+                            let message =
+                                "La tarea ha sido completado correctamente";
+
+                            if (completeAll) {
+                                dataToUpdate.status = Object.keys(
+                                    maintenanceStatus
+                                ).find(
+                                    (key) =>
+                                        maintenanceStatus[key] ===
+                                        maintenanceStatus.active
+                                );
+                                message =
+                                    "Todos los mantenimientos han sido completado, se ha cambiado el estado de la maquina a activa.";
+                            }
+
+                            await getMachine.updateOne(dataToUpdate);
 
                             return res.status(200).json({
                                 status: true,
-                                data: {
-                                    machineID,
-                                    maintenanceID,
-                                    taskID,
-                                },
-                                message:
-                                    "La tarea ha sido completado correctamente",
+                                updatedMachine: await Machine.findById(
+                                    machineID
+                                ).populate("machineUses"),
+                                message,
                             });
                         } else {
                             return res.status(200).json({
@@ -857,6 +943,69 @@ machineMethods.completeCheckListTask = async (req, res) => {
             status: false,
             message: "No tienes permisos para acceder a este recurso.",
         });
+    }
+};
+
+/**
+ * Author: Juan Araque
+ * Last modified: 30/03/2021
+ *
+ * @param {*} req
+ * @param {*} res
+ *
+ * @return Object
+ */
+
+machineMethods.resetMachineHours = async (req, res) => {
+    const permission = ac.can(req.user.rol.name).updateAny("machine");
+    if (permission.granted) {
+        try {
+            const { machineID } = req.body;
+            if (machineID) {
+                const getMachine = await Machine.findById(machineID);
+                if (getMachine) {
+                    await getMachine.updateOne({
+                        totalHoursWorking: 0,
+                    });
+                    return res.status(200).json({
+                        status: true,
+                        updatedMachine: await Machine.findById(machineID)
+                            .populate({
+                                path: "machineUses",
+                                populate: {
+                                    path: "user",
+                                    model: "User",
+                                    select: "name",
+                                },
+                            })
+                            .populate({
+                                path: "maintenances",
+                                populate: {
+                                    path: "maintenanceType",
+                                    model: "MaintenanceType",
+                                },
+                            })
+                            .populate("enableSpareParts"),
+                        message: "Las horas de trabajo han sido reinciadas a 0",
+                    });
+                } else {
+                    return res.status(404).json({
+                        status: false,
+                        message: "No se ha encontrado el recurso solicitado.",
+                    });
+                }
+            } else {
+                return res.status(200).json({
+                    status: false,
+                    message: "El ID de la maquina es requerido.",
+                });
+            }
+        } catch (error) {
+            return res.status(400).json({
+                status: false,
+                message: "Ha ocurrido un error, intentalo nuevamente.",
+            });
+        }
     }
 };
 
