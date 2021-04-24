@@ -515,7 +515,7 @@ machineMethods.registerMachineUse = async (req, res) => {
                                 let newMaitenances = [];
                                 for (let preconfiguredMaitenance of machine.preconfiguredMaitenances) {
                                     if (
-                                        newHoursWorking >=
+                                        newHoursWorking >
                                             preconfiguredMaitenance.hours &&
                                         machine.totalHoursWorking <=
                                             preconfiguredMaitenance.hours
